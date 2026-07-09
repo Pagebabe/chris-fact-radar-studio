@@ -85,10 +85,10 @@ export default function AntiHeisshungerPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/ebook-preview/page-02.png" alt="Anti-Heißhunger-System – Seite 2" className="w-full rounded-lg shadow-lg" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/ebook-preview/page-03.png" alt="Anti-Heißhunger-System – Vorwort" className="w-full rounded-lg shadow-lg" />
+              <img src="/ebook-preview/page-03.png" alt="Anti-Heißhunger-System – Inhalt" className="w-full rounded-lg shadow-lg" />
             </div>
             <a href={pdfHref} className="mt-2 block px-3 pb-1 text-sm font-bold text-rose-200 hover:text-white">
-              Alle 37 Seiten als PDF öffnen ↗
+              Alle 40 Seiten als PDF öffnen ↗
             </a>
           </div>
         </div>
