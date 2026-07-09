@@ -777,7 +777,7 @@ function buildTodayItems(items: ClaimItem[], truths: TruthRecord[]) {
 }
 
 function todayPriority(item: ClaimItem, truths: TruthRecord[]) {
-  const truthMatch = item.chrisPosition ?? (truths.length ? matchClaimToTruths(item.claim, truths) : null);
+  const truthMatch = item.chrisPosition ?? matchClaimToTruths(item.claim, truths);
   const chrisBonus = truthMatch ? Math.round(truthMatch.similarity * 24) : 0;
   const evidenceBonus = Math.min(item.evidence.length * 4, 12);
   return claimPriority(item) + reachScore(item.sourceVideo.views, item.sourceVideo.comments) * 0.3 + chrisBonus + evidenceBonus;
@@ -1134,8 +1134,8 @@ function ClaimInspector({
   const [playingId, setPlayingId] = useState<string | null>(null);
   const velocity = videoVelocity(item.sourceVideo);
   // Chris' eigene Position: falls die Analyse schon eine gefunden hat, diese
-  // nehmen; sonst live gegen die geladene Truth Base matchen.
-  const chrisPosition = item.chrisPosition ?? (truths.length ? matchClaimToTruths(item.claim, truths) : null);
+  // nehmen; sonst live gegen die (Store + eingebaute KB) Truth Base matchen.
+  const chrisPosition = item.chrisPosition ?? matchClaimToTruths(item.claim, truths);
   const sparkline = (item.sourceVideo.viewHistory ?? []).map((snapshot) => ({
     at: snapshot.at.slice(11, 16),
     views: snapshot.views,
@@ -1256,8 +1256,14 @@ function ClaimInspector({
             <p className="chris-statement">{chrisPosition.statement}</p>
             <blockquote className="chris-quote">&bdquo;{chrisPosition.quote}&ldquo;</blockquote>
             <a className="chris-source" href={chrisPosition.url} target="_blank" rel="noreferrer">
-              Aus: {chrisPosition.videoTitle} ↗
+              Aus: {chrisPosition.videoTitle}{typeof chrisPosition.startSeconds === "number" ? " ↗ (Moment im Video)" : " ↗"}
             </a>
+            {chrisPosition.disclaimer && (
+              <p className="chris-disclaimer" style={{ marginTop: "0.5rem", fontSize: "0.72rem", lineHeight: 1.4, opacity: 0.7 }}>
+                ⚠ {chrisPosition.disclaimer}{" "}
+                <a href="/knowledge-base" style={{ textDecoration: "underline" }}>Wie die Wissensbasis entsteht</a>
+              </p>
+            )}
           </section>
         )}
 

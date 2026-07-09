@@ -68,10 +68,10 @@ export default function KnowledgeBasePage() {
         {/* Wozu / wozu nicht */}
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <div className="rounded-3xl border border-emerald-400/30 bg-emerald-500/5 p-6">
-            <h2 className="text-xl font-black text-emerald-200">Wofür sie dient</h2>
+            <h2 className="text-xl font-black text-emerald-200">Wofür sie dient (aktiv)</h2>
             <ul className="mt-3 space-y-2 leading-7 text-slate-200">
-              <li>· <strong>Themen</strong> — worüber Chris tatsächlich spricht</li>
-              <li>· <strong>Gegner-Typen</strong> — auf welche Kanäle/Personen er reagiert (Relevanzsignal)</li>
+              <li>· <strong>Chris-Bezug</strong> — fremde Aussagen werden gegen Chris’ Solo-Videos gematcht, mit Deep-Link zum Moment (Proof of Work)</li>
+              <li>· <strong>Themen &amp; Gegner-Typen</strong> — Relevanzsignal</li>
               <li>· <strong>Dedupe</strong> — hat er ein Thema schon behandelt?</li>
             </ul>
           </div>

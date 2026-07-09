@@ -5,6 +5,7 @@ import {
   upsertTranscriptSource,
   upsertTruths,
 } from "@/lib/store";
+import { classifyVideo } from "@/lib/source-safety";
 import type { TranscriptChunk, TruthRecord } from "@/lib/types";
 
 type ScanRequest = {
@@ -70,13 +71,20 @@ function extractTruths(chunks: TranscriptChunk[]) {
 
 async function scanOne(args: { url: string; title: string; publishedAt: string; transcript: string; source: TranscriptChunk["source"]; save: boolean }) {
   const videoId = videoIdFromUrl(args.url);
-  const chunks = chunkTranscript({ videoId, title: args.title, url: args.url, publishedAt: args.publishedAt, transcript: args.transcript, source: args.source });
-  const truths = extractTruths(chunks);
+  // Sprecher-Sicherheit aus dem Titel ableiten. Reaktions-/Debatten-/Vlog-Videos
+  // liefern KEINE "Wahrheiten" (dort ist Fremdrede nicht von Chris trennbar) —
+  // nur Themen-/Dedupe-Chunks. Nur Solo-Videos werden zu Chris-Positionen.
+  const { category, safeForPositions } = classifyVideo(args.title);
+  const chunks = chunkTranscript({ videoId, title: args.title, url: args.url, publishedAt: args.publishedAt, transcript: args.transcript, source: args.source })
+    .map((chunk) => ({ ...chunk, category, safeForPositions }));
+  const truths = safeForPositions
+    ? extractTruths(chunks).map((truth) => ({ ...truth, category, safeForPositions, origin: "store" as const }))
+    : [];
   const configured = storeConfigured();
   const sourceSaved = configured && args.save ? await upsertTranscriptSource({ id: videoId, video_id: videoId, url: args.url, title: args.title, published_at: args.publishedAt, source: args.source, raw_transcript: args.transcript, payload: { url: args.url, title: args.title, publishedAt: args.publishedAt, source: args.source, characterCount: args.transcript.length } }) : false;
   const chunksSaved = configured && args.save ? await upsertTranscriptChunks(chunks) : false;
   const truthsSaved = configured && args.save ? await upsertTruths(truths) : false;
-  return { sourceSaved, chunksSaved, truthsSaved, chunks, truths, transcript: args.transcript, videoId };
+  return { sourceSaved, chunksSaved, truthsSaved, chunks, truths, transcript: args.transcript, videoId, category, safeForPositions };
 }
 
 export async function POST(request: Request) {
@@ -84,7 +92,7 @@ export async function POST(request: Request) {
   const transcript = body.transcript?.trim();
   if (!transcript || transcript.length < 120) return NextResponse.json({ error: "Missing transcript" }, { status: 400 });
   const result = await scanOne({ url: body.url?.trim() || "manual://christian-channel-scan", title: body.title?.trim() || "Christian Channel Scan", publishedAt: body.publishedAt?.trim() || nowIso(), transcript, source: body.source ?? "manual", save: true });
-  return NextResponse.json({ ok: true, mode: "manual-transcript", configured: storeConfigured(), sourceSaved: result.sourceSaved, chunksSaved: result.chunksSaved, truthsSaved: result.truthsSaved, chunks: result.chunks.length, truths: result.truths });
+  return NextResponse.json({ ok: true, mode: "manual-transcript", configured: storeConfigured(), category: result.category, safeForPositions: result.safeForPositions, positionsBlocked: !result.safeForPositions, sourceSaved: result.sourceSaved, chunksSaved: result.chunksSaved, truthsSaved: result.truthsSaved, chunks: result.chunks.length, truths: result.truths });
 }
 
 export async function GET() {

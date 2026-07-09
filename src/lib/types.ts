@@ -83,15 +83,20 @@ export type MemoryScanRun = {
   id: string; sourceId?: string; startedAt: string; finishedAt?: string; status: "running" | "finished" | "failed"; contentFound: number; transcriptsCreated: number; chunksCreated: number; extractionsCreated: number; errors: string[]; payload?: Record<string, unknown>;
 };
 
+// Sprecher-Sicherheit einer Quelle: aus welchem Video-Typ stammt der Text?
+// Nur solo_advice gilt als "Chris' eigene Position"; Reaktion/Debatte mischen
+// fremde Aussagen (keine Sprecher-Trennung in Auto-Untertiteln) und sind gesperrt.
+export type VideoCategory = "solo_advice" | "reaction" | "debate_interview" | "vlog";
+
 export type TranscriptChunk = {
-  id: string; videoId: string; videoTitle: string; url: string; publishedAt: string; source: TranscriptSource; chunkIndex: number; startSeconds?: number; endSeconds?: number; text: string; tokenCount?: number; topics: string[]; createdAt: string; contentItemId?: string; sourceId?: string;
+  id: string; videoId: string; videoTitle: string; url: string; publishedAt: string; source: TranscriptSource; chunkIndex: number; startSeconds?: number; endSeconds?: number; text: string; tokenCount?: number; topics: string[]; createdAt: string; contentItemId?: string; sourceId?: string; category?: VideoCategory; safeForPositions?: boolean;
 };
 
 export type TruthRecord = {
-  id: string; statement: string; topic: string; quote: string; videoId: string; videoTitle: string; url: string; publishedAt: string; source?: TranscriptSource; transcriptId?: string; chunkId?: string; chunkIndex?: number; startSeconds?: number; endSeconds?: number; topics?: string[]; keywords?: string[]; confidence?: number; extractedAt?: string;
+  id: string; statement: string; topic: string; quote: string; videoId: string; videoTitle: string; url: string; publishedAt: string; source?: TranscriptSource; transcriptId?: string; chunkId?: string; chunkIndex?: number; startSeconds?: number; endSeconds?: number; topics?: string[]; keywords?: string[]; confidence?: number; extractedAt?: string; category?: VideoCategory; safeForPositions?: boolean; origin?: "store" | "kb-bundle";
 };
 
-export type ChrisPosition = { statement: string; quote: string; url: string; videoTitle: string; topic: string; similarity: number };
+export type ChrisPosition = { statement: string; quote: string; url: string; videoTitle: string; topic: string; similarity: number; safeForPositions?: boolean; disclaimer?: string; startSeconds?: number };
 export type ContentPack = { hooks: string[]; shortScript: string; longScript: string; titles: string[]; description: string; hashtags: string[]; communityPost: string; thumbnailTexts: string[] };
 export type ScienceItem = { id: string; title: string; summary: string; contentIdea: string; topic: string; source: string; url: string; publishedAt: string; fetchedAt: string };
 export type ResponseBlocks = { hook: string; opener: string; argumentation: string[]; sources: string[] };
