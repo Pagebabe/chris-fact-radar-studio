@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminStrict } from "@/lib/admin-auth";
 import { analyzeVideoSmart } from "@/lib/analyze";
 import { loadTruths, storeConfigured, upsertClaims } from "@/lib/store";
 import type { SourceVideo } from "@/lib/types";
@@ -27,6 +28,10 @@ function manualVideoId(url: string) {
 }
 
 export async function POST(request: Request) {
+  // Fail-closed: writes into the shared Supabase queue the reviewer sees.
+  const unauthorized = requireAdminStrict(request);
+  if (unauthorized) return unauthorized;
+
   const body = (await request.json()) as ManualClaimRequest;
   const url = body.url?.trim();
   const text = (body.text ?? body.claim)?.trim();

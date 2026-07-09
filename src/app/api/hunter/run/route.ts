@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
+import { requireAdminStrict } from "@/lib/admin-auth";
 import { runHunter } from "@/lib/hunter";
 import type { HunterRun } from "@/lib/types";
 
 export const maxDuration = 300;
 
-export async function POST() {
+export async function POST(request: Request) {
+  // Fail-closed: this triggers paid Apify runs. Locked until APP_ADMIN_TOKEN is set.
+  const unauthorized = requireAdminStrict(request);
+  if (unauthorized) return unauthorized;
+
   try {
     const result = await runHunter();
     return NextResponse.json(result);

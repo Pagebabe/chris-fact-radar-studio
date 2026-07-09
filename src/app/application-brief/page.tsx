@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const proofPoints = [
   "Live MVP mit ehrlichen Grenzen",
-  "Opus Review Layer (konfigurierbar)",
+  "LLM Review Layer (OpenAI-kompatibel, provider-agnostisch)",
   "Chatgesteuerte Intake-Ziele",
   "Human-in-the-Loop Review",
   "Supabase-backed Cases",
@@ -27,12 +27,12 @@ export default function ApplicationBriefPage() {
       <section className="mx-auto max-w-6xl rounded-[2rem] border border-cyan-400/30 bg-gradient-to-br from-slate-900 via-slate-950 to-black p-8 shadow-2xl shadow-cyan-950/30 md:p-10">
         <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">AI Preselection Brief</p>
         <h1 className="mt-3 text-4xl font-black leading-tight tracking-tight md:text-6xl">
-          Claim Review Studio mit Apify/manual Intake und Opus Review Layer.
+          Claim Review Studio mit Apify/manual Intake und OpenAI-kompatiblem LLM Review Layer.
         </h1>
         <p className="mt-5 max-w-4xl text-lg leading-8 text-slate-300">
           Chris Fact Radar ist ein Live-MVP für den deutschen Fitness- und Ernährungsmarkt: Apify/manual Intake, Studio, Status und Lead-Magnet
-          sichern Aussagebasis, priorisieren Risiko und bereiten Content vor. Opus ist eine konfigurierbare Review- und Textschicht
-          darüber: warum ein Treffer zählt, was sicher gesagt werden kann. Der Mensch entscheidet; Metadaten wachsen als
+          sichern Aussagebasis, priorisieren Risiko und bereiten Content vor. Die LLM-Schicht darüber (OpenAI-kompatibel, aktuell NVIDIA-gehostetes
+          Llama-Nemotron, provider-agnostisch) erklärt: warum ein Treffer zählt, was sicher gesagt werden kann. Der Mensch entscheidet; Metadaten wachsen als
           langfristiges Creator- und Market-Intelligence-Asset mit.
         </p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">

@@ -47,7 +47,7 @@ export function WorkspaceShell() {
         <Link href="/" className="flex shrink-0 flex-col leading-tight">
           <span className="text-sm font-black tracking-tight text-white">Chris Fact Radar</span>
           <span className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/80 md:block">
-            Opus Control Layer · Agent-Workspace
+            LLM Control Layer · Agent-Workspace
           </span>
         </Link>
         <nav aria-label="Workspace-Module" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">

@@ -33,7 +33,7 @@ The fact-checking crawl produces a structured market signal as a byproduct. Two 
 
 | Layer | Source of truth |
 |---|---|
-| LLM / QA control | OpenAI-compatible proxy (`OPENAI_BASE_URL`, `OPENAI_API_KEY`, `LLM_MODEL`) with a deterministic fallback |
+| LLM / QA control | OpenAI-compatible interface, deployed against **NVIDIA-hosted Llama-Nemotron** (deliberate choice for free capacity under resource limits), provider-agnostic — a one-line env swap moves it to Opus/GPT/local. Deterministic rule-based fallback when unavailable. |
 | Social intake | Apify-backed Hunter flow + manual transcript import |
 | Data store | Supabase (REST) |
 | Framework | Next.js 16 (App Router), React 19, TypeScript, Tailwind 4 |
@@ -41,6 +41,8 @@ The fact-checking crawl produces a structured market signal as a byproduct. Two 
 | Deploy | Vercel (2 scheduled cron routes) |
 
 **Design stance — API-first by choice.** Automated video-platform API discovery is intentionally **disabled**; legacy discovery routes return `410 Gone`. New material comes only from Apify-backed intake or manually verified transcripts. The app does not claim to discover or transcribe content through undisclosed platform access. Seed data is deliberately empty rather than padded with fake cases.
+
+**Route security.** Public reviewer routes (`/`, `/studio`, `/status`, `GET /api/claims`, `POST /api/chat`, content generation) are open but per-IP rate-limited to protect free-tier LLM cost. Write / paid-intake routes (`POST /api/hunter/run`, `manual-claim`, `opponent-import`, `truths`) are **fail-closed**: they return `401` until `APP_ADMIN_TOKEN` is set on the server. The assistant treats app context as data (prompt-injection hardened) and never echoes secrets.
 
 ### Core routes
 
@@ -64,10 +66,10 @@ npm run dev      # http://localhost:3217
 The app runs with **no** configuration — intake shows honest empty states and analysis uses the rule-based fallback. To enable the full pipeline, create `.env.local` (never commit real keys):
 
 ```bash
-# LLM / QA control layer (OpenAI-compatible proxy)
-OPENAI_BASE_URL=http://127.0.0.1:3456
-OPENAI_API_KEY=your-proxy-token
-LLM_MODEL=opus
+# LLM / QA control layer (any OpenAI-compatible endpoint; default deploy = NVIDIA NIM)
+OPENAI_BASE_URL=https://integrate.api.nvidia.com
+OPENAI_API_KEY=your-api-key
+LLM_MODEL=nvidia/llama-3.3-nemotron-super-49b-v1.5
 LLM_TIMEOUT_MS=25000
 
 # Social intake (Apify)
@@ -77,8 +79,10 @@ APIFY_TOKEN=your-apify-token
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# Studio protection (token-gated MVP mode)
-APP_ADMIN_TOKEN=choose-a-local-admin-token
+# Admin token — REQUIRED to unlock write/paid-intake routes (fail-closed without it)
+# Also enable a Vercel cron secret in production.
+APP_ADMIN_TOKEN=choose-a-strong-admin-token
+CRON_SECRET=choose-a-strong-cron-secret
 ```
 
 ## Validation

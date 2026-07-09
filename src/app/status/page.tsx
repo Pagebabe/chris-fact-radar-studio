@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { loadClaims, storeConfigured } from "@/lib/store";
-import { llmConfigured } from "@/lib/llm";
+import { llmConfigured, configuredLlmModel } from "@/lib/llm";
 import { isPublicProductionClaim, publicClaimKind } from "@/lib/public-claims";
 
 export const dynamic = "force-dynamic";
@@ -60,9 +60,9 @@ export default async function StatusPage() {
     },
     {
       label: "LLM provider",
-      value: llmConfigured() ? "configured" : "fallback-ready",
+      value: llmConfigured() ? configuredLlmModel() : "fallback-ready",
       state: llmConfigured() ? "ok" : "warn",
-      note: "LLM ist als Workflow-Aktion gedacht. Wenn Provider fehlen oder ausfallen, greifen deterministische Fallbacks.",
+      note: "OpenAI-kompatibel, aktuell NVIDIA-gehostetes Llama-Nemotron (bewusste Wahl unter Ressourcen-Grenzen; provider-agnostisch, Ein-Zeilen-Wechsel). LLM bewertet/formuliert nur; bei Ausfall greift ein deterministischer Fallback.",
     },
     {
       label: "Public queue",

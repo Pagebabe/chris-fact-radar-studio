@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminStrict } from "@/lib/admin-auth";
 import { loadTruths, storeConfigured, upsertTruths } from "@/lib/store";
 import type { TruthRecord } from "@/lib/types";
 
@@ -21,6 +22,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // Fail-closed: writes into the shared truth base.
+  const unauthorized = requireAdminStrict(request);
+  if (unauthorized) return unauthorized;
+
   const body = (await request.json().catch(() => ({}))) as TruthImportRequest;
   const topic = body.topic?.trim();
   const statement = body.statement?.trim();

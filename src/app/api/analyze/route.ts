@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { analyzeVideoSmart } from "@/lib/analyze";
 import { loadTruths } from "@/lib/store";
 import type { SourceVideo, TruthRecord } from "@/lib/types";
@@ -22,6 +23,10 @@ async function getTruths(): Promise<TruthRecord[]> {
 }
 
 export async function POST(request: Request) {
+  // Open utility for the studio demo, but soft per-IP rate limited for LLM cost.
+  const limited = rateLimit(request, { key: "analyze", limit: 10, windowMs: 60_000 });
+  if (limited) return limited;
+
   const body = (await request.json()) as Partial<AnalyzeRequest>;
   if (!body.video) {
     return NextResponse.json({ error: "Missing video" }, { status: 400 });

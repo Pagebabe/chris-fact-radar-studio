@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-auth";
+import { rateLimit } from "@/lib/rate-limit";
 import { buildFallbackScript, generateScriptWithLlm, type ScriptStyle } from "@/lib/llm";
 import type { ClaimItem } from "@/lib/types";
 
@@ -8,8 +8,9 @@ export const maxDuration = 60;
 const STYLES: ScriptStyle[] = ["sachlich", "offensiv", "humorvoll"];
 
 export async function POST(request: Request) {
-  const unauthorized = requireAdmin(request);
-  if (unauthorized) return unauthorized;
+  // Reviewer-facing content demo: open, but soft per-IP rate limited for cost.
+  const limited = rateLimit(request, { key: "script", limit: 10, windowMs: 60_000 });
+  if (limited) return limited;
 
   const body = (await request.json()) as { item?: ClaimItem; style?: string };
   if (!body.item) {

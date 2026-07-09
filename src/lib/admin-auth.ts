@@ -36,10 +36,7 @@ function readCookie(request: Request, name: string) {
     ?.slice(name.length + 1) ?? "";
 }
 
-export function requireAdmin(request: Request) {
-  const expected = process.env[ADMIN_TOKEN_ENV];
-  if (!expected) return null;
-
+function presentedToken(request: Request) {
   const authorization = request.headers.get("authorization") ?? "";
   const bearer = authorization.toLowerCase().startsWith("bearer ")
     ? authorization.slice(7).trim()
@@ -47,7 +44,38 @@ export function requireAdmin(request: Request) {
   const headerToken = request.headers.get("x-admin-token")?.trim() ?? "";
   const urlToken = new URL(request.url).searchParams.get("adminToken")?.trim() ?? "";
   const cookieToken = readCookie(request, STUDIO_ADMIN_COOKIE);
+  return { bearer, headerToken, urlToken, cookieToken };
+}
 
+export function requireAdmin(request: Request) {
+  const expected = process.env[ADMIN_TOKEN_ENV];
+  if (!expected) return null;
+
+  const { bearer, headerToken, urlToken, cookieToken } = presentedToken(request);
+  if (bearer === expected || headerToken === expected || urlToken === expected || cookieToken === expected) {
+    return null;
+  }
+
+  return adminUnauthorizedResponse();
+}
+
+// Fail-closed guard for write/cost routes. Unlike requireAdmin, this denies by
+// default when no admin token is configured on the server, so a fresh deploy
+// never leaves DB writes or paid intake (Apify) open to the public.
+export function requireAdminStrict(request: Request) {
+  const expected = process.env[ADMIN_TOKEN_ENV];
+  if (!expected) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Locked",
+        hint: `This write/cost route is disabled until ${ADMIN_TOKEN_ENV} is set on the server.`,
+      },
+      { status: 401 }
+    );
+  }
+
+  const { bearer, headerToken, urlToken, cookieToken } = presentedToken(request);
   if (bearer === expected || headerToken === expected || urlToken === expected || cookieToken === expected) {
     return null;
   }

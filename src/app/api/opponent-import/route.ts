@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminStrict } from "@/lib/admin-auth";
 import {
   storeConfigured,
   upsertClaims,
@@ -83,6 +84,10 @@ function extractOpponentClaims(chunks: TranscriptChunk[]) {
 }
 
 export async function POST(request: Request) {
+  // Fail-closed: writes transcripts/claims into the shared store.
+  const unauthorized = requireAdminStrict(request);
+  if (unauthorized) return unauthorized;
+
   const body = (await request.json().catch(() => ({}))) as OpponentImportRequest;
   const transcript = body.transcript?.trim();
   if (!transcript || transcript.length < 120) return NextResponse.json({ error: "Missing transcript" }, { status: 400 });
