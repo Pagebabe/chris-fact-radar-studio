@@ -33,22 +33,22 @@ function actionHint(claim: ClaimItem) {
 
 const actions = [
   {
-    title: "Studio prüfen",
-    text: "Echte Fälle, Review-Status und Content-Pakete ansehen.",
+    title: "1 · E-Book öffnen (Task 1)",
+    text: "Das fertige Anti-Heißhunger-PDF direkt ansehen.",
+    href: "/anti-heisshunger-system.pdf",
+  },
+  {
+    title: "2 · Studio: 16 geprüfte Cases",
+    text: "Echte Fälle, Scores, Evidence und Review-Status ansehen.",
     href: "/studio",
   },
   {
-    title: "Intake prüfen",
-    text: "Apify/manual Intake, Crawler-Ziele und Run-Status im Studio ansehen.",
+    title: "3 · Intake / Jäger starten",
+    text: "Live-Crawler auslösen und echte Funde in der Queue sehen.",
     href: "/studio",
   },
   {
-    title: "Lead-Magnet zeigen",
-    text: "Anti-Heißhunger-System als erstes Asset aus dem Workflow öffnen.",
-    href: "/lead-magnets/anti-heisshunger",
-  },
-  {
-    title: "Status öffnen",
+    title: "4 · Status & Ehrlichkeit",
     text: "Provider, Grenzen und prüfbare Endpunkte ansehen.",
     href: "/status",
   },
@@ -183,7 +183,7 @@ export default async function Home() {
 
           <aside className="space-y-4">
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-cyan-300">Schnellaktionen</p>
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-cyan-300">Für den Prüfer — 4 Schritte</p>
               <div className="mt-4 grid gap-3">
                 {actions.map((action) => (
                   <Link key={action.title} href={action.href} className="rounded-2xl border border-white/10 bg-slate-950 p-4 hover:border-cyan-300 hover:bg-cyan-300 hover:text-slate-950">

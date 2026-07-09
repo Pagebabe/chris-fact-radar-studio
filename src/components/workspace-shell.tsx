@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 const MODULES = [
   { href: "/", label: "Start" },
   { href: "/studio", label: "Studio" },
-  { href: "/lead-magnets/anti-heisshunger", label: "Lead-Magnet" },
+  { href: "/lead-magnets/anti-heisshunger", label: "E-Book" },
   { href: "/status", label: "Status" },
   { href: "/application-brief", label: "Brief" },
 ];

@@ -28,8 +28,8 @@ const smokeSteps = [
   { label: "Start", href: "/", note: "Proof-of-Work-Story und Golden Run verstehen" },
   { label: "Studio", href: "/studio", note: "Claim öffnen, Scores und Review-Fluss prüfen" },
   { label: "Studio Intake", href: "/studio", note: "Apify/manual Intake, Chat und Crawler-Ziele prüfen" },
-  { label: "Lead Magnet", href: "/lead-magnets/anti-heisshunger", note: "E-Book-Modul und Check-Funnel ansehen" },
-  { label: "Check", href: "/lead-magnets/anti-heisshunger/check", note: "Interaktiven Heißhunger-Check durchspielen" },
+  { label: "E-Book (PDF)", href: "/anti-heisshunger-system.pdf", note: "Task 1: das fertige Anti-Heißhunger-PDF direkt öffnen" },
+  { label: "Lead-Magnet + Check", href: "/lead-magnets/anti-heisshunger", note: "E-Book-Modul und Check-Funnel im Kontext ansehen" },
   { label: "Health", href: "/api/health", note: "Provider-/App-Status maschinenlesbar prüfen" },
 ];
 
