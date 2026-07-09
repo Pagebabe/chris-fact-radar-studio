@@ -51,8 +51,19 @@ export async function loadClaims(): Promise<ClaimItem[] | null> {
   } catch { return null; }
 }
 
+// Curated case types (debate rebuttals, external web claims) are legitimately
+// public without a full spoken-word transcript, so the write path must accept
+// them too — otherwise an existing public claim can be read but never updated.
+// The transcript gate still applies to scraped/YouTube claims.
+function isCuratedPublicType(item: ClaimItem): boolean {
+  const platform = String(item.sourceVideo?.platform ?? "");
+  return platform === "Debatten-Rebuttal" || platform === "Externer Web-Claim";
+}
+
 export async function upsertClaims(items: ClaimItem[]): Promise<boolean> {
-  const reviewReadyItems = items.filter((item) => hasEvaluationReadySpokenWord(item.sourceVideo));
+  const reviewReadyItems = items.filter(
+    (item) => hasEvaluationReadySpokenWord(item.sourceVideo) || isCuratedPublicType(item)
+  );
   if (!storeConfigured() || reviewReadyItems.length === 0) return false;
   try {
     const rows: ClaimRow[] = reviewReadyItems.map((item) => ({ id: item.id, payload: item, stage: item.stage }));

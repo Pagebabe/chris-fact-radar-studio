@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdminStrict } from "@/lib/admin-auth";
 import { isPublicClaim, isWritableClaim } from "@/lib/public-claims";
 import { loadClaims, storeConfigured, upsertClaims } from "@/lib/store";
 import type { ClaimItem } from "@/lib/types";
@@ -14,7 +14,8 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const unauthorized = requireAdmin(request);
+  // Fail-closed: writing claims into the shared store is an admin action.
+  const unauthorized = requireAdminStrict(request);
   if (unauthorized) return unauthorized;
 
   if (!storeConfigured()) {
