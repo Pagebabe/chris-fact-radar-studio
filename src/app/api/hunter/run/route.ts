@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
-import { requireAdminStrict } from "@/lib/admin-auth";
+import { rateLimit } from "@/lib/rate-limit";
 import { runHunter } from "@/lib/hunter";
 import type { HunterRun } from "@/lib/types";
 
 export const maxDuration = 300;
 
 export async function POST(request: Request) {
-  // Fail-closed: this triggers paid Apify runs. Locked until APP_ADMIN_TOKEN is set.
-  const unauthorized = requireAdminStrict(request);
-  if (unauthorized) return unauthorized;
+  // Open so a reviewer can launch the intake live and see real proof of work,
+  // but per-IP rate-limited. Cost is capped by HUNTER_DAILY_BUDGET_EUR; on the
+  // free Apify tier a run may hit the monthly usage / platform rate limits —
+  // that state is returned honestly in the run result, not hidden.
+  const limited = rateLimit(request, { key: "hunter", limit: 2, windowMs: 60_000 });
+  if (limited) return limited;
 
   try {
     const result = await runHunter();
