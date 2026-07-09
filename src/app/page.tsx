@@ -110,7 +110,7 @@ export default async function Home() {
                   <h2 className="mt-1 text-2xl font-black">Was ist echt geprüft, was ist nur Intake?</h2>
                 </div>
                 <span className="w-fit rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-xs font-black text-cyan-100">
-                  MVP: Apify/manual Intake + Review + Content-Pack
+                  Workflow: Intake → Review → Content-Pack
                 </span>
               </div>
             </div>
@@ -125,7 +125,7 @@ export default async function Home() {
 
               <div className="ml-auto max-w-[84%] rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4 text-slate-100">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Abnahmefrage</p>
-                <p className="mt-2 font-semibold leading-7">Welche Daten sind live, welche Tests sind echt, und welche Funktionen bleiben bewusst MVP?</p>
+                <p className="mt-2 font-semibold leading-7">Was ist live, was ist geprüft, und was ist der nächste Ausbauschritt?</p>
               </div>
 
               <div className="max-w-[92%] rounded-[1.5rem] bg-slate-900 p-4 text-slate-100">

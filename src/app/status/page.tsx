@@ -25,7 +25,7 @@ function badgeClass(state: StatusRow["state"]) {
 }
 
 const smokeSteps = [
-  { label: "Start", href: "/", note: "Proof-of-Work-Story und Golden Run verstehen" },
+  { label: "Start", href: "/", note: "Produkt-Story und Golden Run verstehen" },
   { label: "Studio", href: "/studio", note: "Claim öffnen, Scores und Review-Fluss prüfen" },
   { label: "Studio Intake", href: "/studio", note: "Apify/manual Intake, Chat und Crawler-Ziele prüfen" },
   { label: "E-Book (PDF)", href: "/anti-heisshunger-system.pdf", note: "Task 1: das fertige Anti-Heißhunger-PDF direkt öffnen" },
@@ -92,8 +92,8 @@ export default async function StatusPage() {
             <p className="mb-2 text-sm font-semibold uppercase tracking-[0.25em] text-cyan-300">Smoke Test / Production Status</p>
             <h1 className="text-4xl font-black tracking-tight md:text-6xl">Chris Fact Radar</h1>
             <p className="mt-4 max-w-2xl text-lg text-slate-300">
-              Zentrale Prüfer-Seite für Live-Status, Golden Run, Datenhygiene und ehrliche Beta-Grenzen.
-              Das MVP ist testbar; breitere Apify-Abdeckung, OCR/Audio und ein echter Chat-Assistent sind Production-Ausbau.
+              Zentrale Prüfer-Seite für Live-Status, Golden Run, Datenhygiene und klare Grenzen.
+              Die App ist live und benutzbar; breitere Plattform-Abdeckung (TikTok/Instagram) und OCR/Audio sind der nächste Ausbauschritt.
             </p>
           </div>
           <Link className="rounded-full border border-cyan-300 px-5 py-3 text-sm font-bold text-cyan-100 hover:bg-cyan-300 hover:text-slate-950" href="/">

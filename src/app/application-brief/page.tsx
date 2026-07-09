@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const proofPoints = [
-  "Live MVP mit ehrlichen Grenzen",
+  "Live & benutzbar, mit klaren Grenzen",
   "LLM Review Layer (OpenAI-kompatibel, provider-agnostisch)",
   "Chatgesteuerte Intake-Ziele",
   "Human-in-the-Loop Review",
@@ -30,7 +30,7 @@ export default function ApplicationBriefPage() {
           Claim Review Studio mit Apify/manual Intake und OpenAI-kompatiblem LLM Review Layer.
         </h1>
         <p className="mt-5 max-w-4xl text-lg leading-8 text-slate-300">
-          Chris Fact Radar ist ein Live-MVP für den deutschen Fitness- und Ernährungsmarkt: Apify/manual Intake, Studio, Status und Lead-Magnet
+          Chris Fact Radar ist ein live nutzbares Tool für den deutschen Fitness- und Ernährungsmarkt: Apify/manual Intake, Studio, Status und Lead-Magnet
           sichern Aussagebasis, priorisieren Risiko und bereiten Content vor. Die LLM-Schicht darüber (OpenAI-kompatibel, aktuell NVIDIA-gehostetes
           Llama-Nemotron, provider-agnostisch) erklärt: warum ein Treffer zählt, was sicher gesagt werden kann. Der Mensch entscheidet; Metadaten wachsen als
           langfristiges Creator- und Market-Intelligence-Asset mit.
