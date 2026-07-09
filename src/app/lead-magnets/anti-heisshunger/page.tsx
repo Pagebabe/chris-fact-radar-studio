@@ -59,14 +59,15 @@ export default function AntiHeisshungerPage() {
               <span className="rounded-full bg-emerald-200 px-4 py-2 text-emerald-950">Check-Funnel integriert</span>
             </div>
             <div className="mt-7 flex flex-wrap gap-3">
-              {pdfReady ? (
-                <a href={pdfHref} target="_blank" rel="noreferrer" className="rounded-full bg-white px-6 py-3 text-sm font-black text-rose-950 hover:bg-rose-100">
-                  PDF öffnen / herunterladen
-                </a>
-              ) : (
-                <span className="rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-bold text-slate-300">
-                  PDF-Slot bereit: finaler Export wird als /anti-heisshunger-system.pdf verlinkt
-                </span>
+              {pdfReady && (
+                <>
+                  <a href={pdfHref} className="rounded-full bg-white px-6 py-3 text-sm font-black text-rose-950 hover:bg-rose-100">
+                    E-Book (PDF) öffnen
+                  </a>
+                  <a href={pdfHref} download className="rounded-full border border-white/40 px-6 py-3 text-sm font-black text-white hover:bg-white hover:text-rose-950">
+                    PDF herunterladen
+                  </a>
+                </>
               )}
               <Link href="/lead-magnets/anti-heisshunger/check" className="rounded-full bg-rose-200 px-6 py-3 text-sm font-black text-rose-950 hover:bg-white">
                 Heißhunger-Check starten
@@ -76,19 +77,19 @@ export default function AntiHeisshungerPage() {
               </Link>
             </div>
           </div>
-          <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-            <div className="rounded-[1.5rem] bg-rose-100 p-6 text-rose-950 shadow-2xl">
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-rose-700">PDF Preview</p>
-              <h2 className="mt-8 text-4xl font-black leading-tight">Du bist nicht schwach. Dein System ist falsch gebaut.</h2>
-              <p className="mt-6 text-lg font-semibold leading-8">
-                Baue Umgebung, Routinen und Notfallstrategien so, dass Heißhunger nicht mehr jeden Abend gewinnt.
-              </p>
-              <div className="mt-8 grid gap-3 text-sm font-bold">
-                <div className="rounded-2xl bg-white/70 p-4">Trigger erkennen</div>
-                <div className="rounded-2xl bg-white/70 p-4">Protein + Sättigung nutzen</div>
-                <div className="rounded-2xl bg-white/70 p-4">Nach Fressattacken resetten statt kompensieren</div>
-              </div>
+          <div className="rounded-[2rem] border border-white/10 bg-white/5 p-3">
+            <p className="mb-2 px-3 pt-2 text-sm font-black uppercase tracking-[0.22em] text-rose-200">E-Book — echte Seiten</p>
+            <div className="max-h-[560px] space-y-3 overflow-y-auto rounded-[1.2rem] bg-slate-950/40 p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ebook-preview/page-01.png" alt="Anti-Heißhunger-System – Cover" className="w-full rounded-lg shadow-lg" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ebook-preview/page-02.png" alt="Anti-Heißhunger-System – Seite 2" className="w-full rounded-lg shadow-lg" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ebook-preview/page-03.png" alt="Anti-Heißhunger-System – Vorwort" className="w-full rounded-lg shadow-lg" />
             </div>
+            <a href={pdfHref} className="mt-2 block px-3 pb-1 text-sm font-bold text-rose-200 hover:text-white">
+              Alle 37 Seiten als PDF öffnen ↗
+            </a>
           </div>
         </div>
 
