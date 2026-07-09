@@ -9,6 +9,7 @@ const MODULES = [
   { href: "/studio", label: "Studio" },
   { href: "/lead-magnets/anti-heisshunger", label: "E-Book" },
   { href: "/status", label: "Status" },
+  { href: "/knowledge-base", label: "Wissensbasis" },
   { href: "/application-brief", label: "Brief" },
 ];
 
