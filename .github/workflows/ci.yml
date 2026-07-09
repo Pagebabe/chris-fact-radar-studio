@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Verify MVP gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+      - name: Audit production dependencies
+        run: npm audit --audit-level=high
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E smoke tests
+        run: npm run test:e2e
+        env:
+          CI: true
+          NEXT_TELEMETRY_DISABLED: 1
+          OPENAI_API_KEY: ""
+          OPENAI_BASE_URL: ""
+          SUPABASE_URL: ""
+          SUPABASE_SERVICE_ROLE_KEY: ""
+          APP_ADMIN_TOKEN: ""
+
+      - name: Protected studio auth smoke test
+        run: npm run test:e2e:auth
+        env:
+          CI: true
+          NEXT_TELEMETRY_DISABLED: 1
+          OPENAI_API_KEY: ""
+          OPENAI_BASE_URL: ""
+          SUPABASE_URL: ""
+          SUPABASE_SERVICE_ROLE_KEY: ""
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore

@@ -1,0 +1,4 @@
+
+# Local Loom / voice artifacts - never deploy to Vercel
+docs/loom-build/voices/
+*.onnx

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "SF Pro Display", "Inter", sans-serif; }
+  body { width:1920px; height:1080px; background:#05080f; color:#e8eef7; overflow:hidden; }
+  .top { display:flex; justify-content:space-between; align-items:center; padding:16px 40px; border-bottom:1px solid #101826; }
+  .brand b { font-size:15px; } .brand div { color:#22d3ee; font-size:10px; letter-spacing:2.5px; font-weight:600; margin-top:2px; }
+  .concept { background:linear-gradient(90deg,#7c3aed,#22d3ee); color:#04101a; font-weight:700; font-size:12px; padding:7px 16px; border-radius:999px; letter-spacing:1px; }
+  .wrap { padding:20px 40px 0; }
+  h1 { font-size:30px; margin-bottom:3px; }
+  .sub { color:#8fa3bd; font-size:13px; margin-bottom:16px; }
+  .sub b { color:#22d3ee; }
+  .kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:14px; }
+  .kpi { background:#0b1220; border:1px solid #16233a; border-radius:12px; padding:14px 18px; }
+  .kpi .l { color:#8fa3bd; font-size:11.5px; margin-bottom:5px; }
+  .kpi .v { font-size:26px; font-weight:800; }
+  .kpi .d { font-size:10.5px; margin-top:3px; color:#34d399; }
+  .kpi .d.neg { color:#f87171; }
+  .grid { display:grid; grid-template-columns: 1.25fr 1fr 1fr; gap:14px; margin-bottom:14px; }
+  .card { background:#0b1220; border:1px solid #16233a; border-radius:12px; padding:16px 18px; }
+  .card h3 { font-size:12px; letter-spacing:1.5px; color:#22d3ee; margin-bottom:11px; font-weight:700; }
+  .row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #101826; }
+  .row:last-child { border:none; }
+  .badge { font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:999px; white-space:nowrap; }
+  .hot { background:#3b0d14; color:#f87171; } .mid { background:#2a2408; color:#fbbf24; } .ok { background:#062a1c; color:#34d399; } .info { background:#0e2a3d; color:#7dd3fc; }
+  .row .t { flex:1; font-size:12.5px; }
+  .row .n { color:#8fa3bd; font-size:10.5px; margin-top:1px; }
+  .spark { width:90px; height:22px; flex-shrink:0; }
+  .bar { height:8px; border-radius:99px; background:#13294d; overflow:hidden; margin-top:4px; }
+  .bar i { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#22d3ee,#7c3aed); }
+  .creator { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #101826; font-size:12.5px; }
+  .creator:last-child { border:none; }
+  .creator .av { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#1e3a5f,#22d3ee); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:#04101a; }
+  .creator .cn { flex:1; }
+  .creator .cn .n { color:#8fa3bd; font-size:10.5px; }
+  .creator .share { font-weight:800; font-size:13px; color:#7dd3fc; }
+  .gap { background:#0e1730; border:1px solid #1c2b4d; border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .gap b { font-size:12.5px; display:block; }
+  .gap span { font-size:10.5px; color:#8fa3bd; }
+  .gap .rec { color:#34d399; font-size:10.5px; font-weight:700; }
+  .roi { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .roi .r { background:#0e1730; border:1px solid #1c2b4d; border-radius:10px; padding:10px 12px; text-align:center; }
+  .roi .r .v { font-size:19px; font-weight:800; color:#34d399; }
+  .roi .r .l { font-size:10px; color:#8fa3bd; margin-top:2px; }
+  .foot { position:absolute; bottom:0; left:0; right:0; padding:12px 40px; color:#5b6c85; font-size:11px; border-top:1px solid #101826; background:#070b13; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="brand"><b>Chris Fact Radar</b><div>VISION · MARKET INTELLIGENCE SUITE</div></div>
+    <div class="concept">ZUKUNFTS-KONZEPT · NICHT IM MVP</div>
+  </div>
+  <div class="wrap">
+    <h1>Market Intelligence für Fitness-Content</h1>
+    <div class="sub">Die Daten fürs Claim-Checking werden sowieso gesammelt — <b>dasselbe Crawling liefert nebenbei die komplette Marktanalyse:</b> Wer dominiert welches Thema, wo entstehen Lücken, welcher Content wirkt.</div>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Beobachtete Reichweite</div><div class="v">21,4 Mio</div><div class="d">13 Quellen · täglich</div></div>
+      <div class="kpi"><div class="l">Themen im Tracking</div><div class="v">142</div><div class="d">+18 diese Woche</div></div>
+      <div class="kpi"><div class="l">Creator im Radar</div><div class="v">37</div><div class="d">4 neue Aufsteiger</div></div>
+      <div class="kpi"><div class="l">Content-Lücken erkannt</div><div class="v">6</div><div class="d">2 mit hohem Potenzial</div></div>
+      <div class="kpi"><div class="l">Risiko-Claims aktiv</div><div class="v">3</div><div class="d neg">1 viral steigend</div></div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>THEMEN-TRENDS — WAS DER MARKT GERADE KONSUMIERT</h3>
+        <div class="row"><span class="badge hot">VIRAL</span><div class="t">Zucker/Sucht-Vergleiche<div class="n">8,4 Mio Views/30d · Treiber: 3 Creator · Risiko-Thema</div></div><svg class="spark" viewBox="0 0 90 22"><polyline points="0,19 15,17 30,18 45,12 60,9 75,5 90,2" fill="none" stroke="#f87171" stroke-width="2"/></svg></div>
+        <div class="row"><span class="badge ok">CHANCE</span><div class="t">Kreatin für Frauen<div class="n">Suchvolumen +140% · kaum seriöse Aufklärung → Lücke</div></div><svg class="spark" viewBox="0 0 90 22"><polyline points="0,20 22,17 45,12 68,7 90,3" fill="none" stroke="#34d399" stroke-width="2"/></svg></div>
+        <div class="row"><span class="badge mid">DEBATTE</span><div class="t">Intervallfasten &amp; Insulin<div class="n">5 Creator streiten · 8,2 Mio Reichweite · Positionierungs-Chance</div></div><svg class="spark" viewBox="0 0 90 22"><polyline points="0,15 22,13 45,14 68,9 90,7" fill="none" stroke="#fbbf24" stroke-width="2"/></svg></div>
+        <div class="row"><span class="badge info">FORMAT</span><div class="t">Shorts &lt;45s schlagen Longform bei Mythen-Themen<div class="n">Ø 3,1× Engagement · Timing: 17–20 Uhr</div></div><svg class="spark" viewBox="0 0 90 22"><polyline points="0,16 22,14 45,10 68,8 90,4" fill="none" stroke="#7dd3fc" stroke-width="2"/></svg></div>
+      </div>
+      <div class="card">
+        <h3>CREATOR-LANDSCHAFT — WER BESETZT WAS</h3>
+        <div class="creator"><div class="av">LA</div><div class="cn">life algorithm DE<div class="n">Zucker/Sucht · misleading-Quote 34%</div><div class="bar"><i style="width:78%"></i></div></div><div class="share">78</div></div>
+        <div class="creator"><div class="av">FM</div><div class="cn">FitMythen<div class="n">Supplemente · solide Quellenlage</div><div class="bar"><i style="width:64%"></i></div></div><div class="share">64</div></div>
+        <div class="creator"><div class="av">KH</div><div class="cn">Kraft &amp; Hirn<div class="n">Training/Studien · Aufsteiger +212%</div><div class="bar"><i style="width:51%"></i></div></div><div class="share">51</div></div>
+        <div class="creator"><div class="av">VB</div><div class="cn">VeganBoost<div class="n">Ernährung · polarisiert stark</div><div class="bar"><i style="width:43%"></i></div></div><div class="share">43</div></div>
+        <div style="margin-top:8px; font-size:10.5px; color:#8fa3bd;">Share-of-Voice-Index je Themencluster (30 Tage)</div>
+      </div>
+      <div class="card">
+        <h3>CONTENT-GAP → EMPFEHLUNG</h3>
+        <div class="gap"><b>„Kreatin für Frauen" unbesetzt</b><span>140% mehr Suche, kein Top-Creator liefert Evidence-basiert · </span><span class="rec">→ Erstbesetzer-Chance, Skript-Rohbau liegt bereit</span></div>
+        <div class="gap"><b>Mythen-Rebuttals in Shorts-Format</b><span>Nachfrage hoch, Angebot Longform-lastig · </span><span class="rec">→ Serie „60-Sekunden-Faktencheck"</span></div>
+        <div class="gap"><b>Süßstoff-Panik läuft ungebremst</b><span>320k Views/6h ohne Gegenstimme · </span><span class="rec">→ Rebuttal heute = maximale Sichtbarkeit</span></div>
+      </div>
+    </div>
+    <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;">
+      <div class="card">
+        <h3>KAMPAGNEN-WIRKUNG (30 TAGE)</h3>
+        <div class="roi">
+          <div class="r"><div class="v">1,2 Mio</div><div class="l">erreichte Views</div></div>
+          <div class="r"><div class="v">+38%</div><div class="l">E-Book-Funnel</div></div>
+          <div class="r"><div class="v">0</div><div class="l">Faktenfehler nach Review</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>AUDIENCE-SIGNALE</h3>
+        <div class="row"><div class="t">Kommentar-Sentiment bei Mythen-Aufklärung<div class="n">überdurchschnittlich positiv (+41 NPS-Proxy)</div></div><span class="badge ok">STARK</span></div>
+        <div class="row"><div class="t">Wiederkehrende Fragen erkannt: „Was soll ich stattdessen tun?"<div class="n">→ direkter Input für Content- &amp; Produkt-Ideen</div></div><span class="badge info">INSIGHT</span></div>
+      </div>
+      <div class="card">
+        <h3>WETTBEWERBSVORTEIL &amp; SKALIERUNG</h3>
+        <div class="row"><div class="t">Eigene Crawler-Infrastruktur — gezielt auf jede öffentlich zugängliche Quelle ansetzbar<div class="n">API-first, Opt-outs respektiert · Trends Tage früher sehen</div></div><span class="badge ok">TEMPO</span></div>
+        <div class="row"><div class="t">Detailtiefe schwer kopierbar → echter Vorsprung<div class="n">Ein Crawl, vier Nutzungen · Metadaten wachsen als Langzeit-Asset</div></div><span class="badge info">MOAT</span></div>
+        <div class="row"><div class="t">Bei Skalierung: als Dienstleistung für weitere Nischen anbietbar<div class="n">gleiche Pipeline, neuer Markt — denkbares Geschäftsmodell</div></div><span class="badge mid">SAAS</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">Konzept-Ansicht der Ausbaustufe · Datenwerte illustrativ · Kernprinzip bleibt: KI sortiert vor, der Mensch entscheidet (Human-in-the-Loop)</div>
+</body>
+</html>
