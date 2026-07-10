@@ -62,7 +62,7 @@ export default async function StatusPage() {
       label: "LLM provider",
       value: llmConfigured() ? configuredLlmModel() : "fallback-ready",
       state: llmConfigured() ? "ok" : "warn",
-      note: "OpenAI-kompatibel, aktuell NVIDIA-gehostetes Llama-Nemotron (bewusste Wahl unter Ressourcen-Grenzen; provider-agnostisch, Ein-Zeilen-Wechsel). LLM bewertet/formuliert nur; bei Ausfall greift ein deterministischer Fallback.",
+      note: "OpenAI-kompatible, providerneutrale Laufzeitschicht. Der aktive Modellname steht im Statuswert; das LLM bewertet und formuliert nur. Bei Ausfall greift ein deterministischer, klar markierter Fallback.",
     },
     {
       label: "Public queue",
