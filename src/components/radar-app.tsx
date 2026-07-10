@@ -111,7 +111,7 @@ export function RadarApp() {
         setServerStore(true);
         setServerWritable(Boolean(data.writable));
         if (data.claims.length > 0) {
-          setItems((current) => mergeClaims(data.claims, current));
+          setItems((current) => reconcileWithServer(data.claims, current));
           setSelectedId((current) => current || data.claims[0]?.id || "");
           setStatus("Geteilte Queue aus dem Team-Speicher geladen.");
         } else {
@@ -779,6 +779,17 @@ function mergeClaims(preferred: ClaimItem[], fallback: ClaimItem[]): ClaimItem[]
   for (const item of normalizeClaimsSourceUrls(fallback)) merged.set(item.id, item);
   for (const item of normalizeClaimsSourceUrls(preferred)) merged.set(item.id, item);
   return Array.from(merged.values());
+}
+
+// Für den autoritativen Server-Snapshot: Der Server bestimmt, welche Claims
+// existieren. Serverseitig entfernte Fälle dürfen nicht aus dem localStorage
+// wiederauferstehen; lokale Zusatzfelder bekannter IDs bleiben erhalten.
+function reconcileWithServer(server: ClaimItem[], local: ClaimItem[]): ClaimItem[] {
+  const localById = new Map(normalizeClaimsSourceUrls(local).map((item) => [item.id, item] as const));
+  return normalizeClaimsSourceUrls(server).map((item) => {
+    const localVersion = localById.get(item.id);
+    return localVersion ? { ...localVersion, ...item } : item;
+  });
 }
 
 function mergeCandidates(fresh: HunterCandidate[], current: HunterCandidate[]): HunterCandidate[] {

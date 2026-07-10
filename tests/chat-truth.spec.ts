@@ -156,6 +156,39 @@ test("count questions get deterministic totals instead of a deflection", async (
   expect(body.reply).not.toMatch(/Nächster sinnvoller Schritt/);
 });
 
+test("suggestion chip 'next claim' is answered deterministically", async ({ request }) => {
+  const response = await request.post("/api/chat", {
+    headers: chatHeaders(),
+    data: chatData("Welchen Claim soll ich als nächstes beantworten?"),
+  });
+  const body = await response.json();
+  expect(body.source).toBe("system");
+  expect(body.reply).toMatch(/Als Nächstes lohnt sich/);
+  expect(body.reply).not.toMatch(/konnte ich gerade nicht direkt beantworten/);
+});
+
+test("suggestion chip 'top hit' is answered deterministically", async ({ request }) => {
+  const response = await request.post("/api/chat", {
+    headers: chatHeaders(),
+    data: chatData("Erkläre mir den Top-Treffer und warum er zählt."),
+  });
+  const body = await response.json();
+  expect(body.source).toBe("system");
+  expect(body.reply).toMatch(/Top-Treffer ist/);
+  expect(body.reply).toMatch(/Warum er zählt/);
+});
+
+test("suggestion chip 'hook + arguments' answers from data or refuses honestly", async ({ request }) => {
+  const response = await request.post("/api/chat", {
+    headers: chatHeaders(),
+    data: chatData("Gib mir Hook + 3 Argumente für ein Reaktions-Video."),
+  });
+  const body = await response.json();
+  expect(body.source).toBe("system");
+  expect(body.reply).toMatch(/Response-Block|Hook/);
+  expect(body.reply).not.toMatch(/konnte ich gerade nicht direkt beantworten/);
+});
+
 test("plain 'vorher genannt' phrasing still triggers the honest no-memory answer", async ({ request }) => {
   const response = await request.post("/api/chat", {
     headers: chatHeaders(),

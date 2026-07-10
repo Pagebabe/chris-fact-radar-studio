@@ -269,6 +269,21 @@ function isCountQuestion(lower: string) {
   return /(wie ?viele|anzahl|aufteilung|verteilung).{0,80}(claims?|fälle|faelle|treffer|positionen|quellen)/i.test(lower);
 }
 
+// Die drei Vorschlags-Chips der Secretary-UI müssen immer beantwortbar sein —
+// deterministisch aus den Daten, nie abhängig vom LLM-Provider.
+function isNextClaimQuestion(lower: string) {
+  return /(welchen|welcher|was).{0,40}(claim|fall|treffer).{0,50}(nächstes|naechstes|zuerst|beantworten|angehen)/i.test(lower)
+    || /als n(ä|ae)chstes (beantworten|angehen|prüfen|pruefen)/i.test(lower);
+}
+
+function isTopHitQuestion(lower: string) {
+  return /(top.?treffer|top.?claim|top.?fall|wichtigste[rn]? (fall|claim|treffer))/i.test(lower);
+}
+
+function isHookQuestion(lower: string) {
+  return /hook.{0,80}(argument|reaktion)|argument.{0,60}reaktions.?video/i.test(lower);
+}
+
 function isProductQuestion(lower: string) {
   return /(was ist chris fact radar|was ist das system|live nutzbar|ausbaupfad|proof.of.work|beta.m?v?p)/i.test(lower);
 }
@@ -306,6 +321,25 @@ function systemTruthReply(message: string, body: ChatRequest, truths: TruthRecor
     const all = body.context?.claims ?? [];
     const breakdown = claimBreakdown(all);
     return `Aktuell sind ${all.length} Claims öffentlich: ${breakdown.debate} kuratierte Debatten-Rebuttals, ${breakdown.web} externe Web-Claims und ${breakdown.youtube} YouTube-Fälle mit verifiziertem Transkript. Dazu kommen ${truths.length} öffentliche Chris-Wissenspositionen. Die Debatten-Fälle stammen aus einem kuratierten öffentlichen Debatten-Video; Review-Ziel sind die Aussagen des Debattengegners, nicht Christian Wolf. Im Chat priorisiert sichtbar sind die Top ${Math.min(5, all.length)}.`;
+  }
+
+  const top = claims.find((claim) => claim.id === body.selectedClaimId) ?? claims[0];
+
+  if (top && isNextClaimQuestion(lower)) {
+    return `Als Nächstes lohnt sich „${top.claim}“ — Risiko ${top.riskScore}, Chris-Fit ${top.relevanceScore}, ${top.evidence?.length ?? 0} Belege, Stage ${top.stage}. Warum es zählt: ${cleanInline(top.whyItMatters, 300)} Öffne die Vollprüfung und kontrolliere Originalaussage und Belege; danach kannst du direkt das Content-Paket bauen.`;
+  }
+
+  if (top && isTopHitQuestion(lower)) {
+    return `Top-Treffer ist „${top.claim}“ (Verdict ${top.verdict}, Risiko ${top.riskScore}, Chris-Fit ${top.relevanceScore}, ${top.evidence?.length ?? 0} Belege). Warum er zählt: ${cleanInline(top.whyItMatters, 300)} Quelle: ${cleanInline(top.sourceVideo?.creator, 80)} · ${cleanInline(top.sourceVideo?.title, 140)}.`;
+  }
+
+  if (top && isHookQuestion(lower)) {
+    const blocks = top.responseBlocks;
+    if (blocks?.hook && (blocks.argumentation?.length ?? 0) > 0) {
+      const args = blocks.argumentation.slice(0, 3).map((arg, i) => `${i + 1}) ${cleanInline(arg, 220)}`).join(" ");
+      return `Aus dem vorbereiteten Response-Block zu „${cleanInline(top.claim, 160)}“ — Hook: „${cleanInline(blocks.hook, 200)}“ Argumente: ${args} Vor Veröffentlichung Originalaussage und Belege in der Vollprüfung gegenchecken.`;
+    }
+    return `Für „${cleanInline(top.claim, 160)}“ ist noch kein vorbereiteter Response-Block hinterlegt. Baue ihn über „Content-Paket bauen“ in der Vollprüfung; ich erfinde keinen Hook ohne geprüfte Basis.`;
   }
 
   if (isProductQuestion(lower)) {
