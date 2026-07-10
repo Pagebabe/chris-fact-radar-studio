@@ -8,9 +8,10 @@ type Props = {
   creators: CreatorRecord[];
   claims: ClaimItem[];
   onToggleWatch: (id: string) => void;
+  onOpenClaim?: (id: string) => void;
 };
 
-export function Kartei({ creators, claims, onToggleWatch }: Props) {
+export function Kartei({ creators, claims, onToggleWatch, onOpenClaim }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(() => creators[0]?.id ?? null);
   const [copied, setCopied] = useState(false);
   const [watchOverrides, setWatchOverrides] = useState<Record<string, boolean>>({});
@@ -108,10 +109,17 @@ export function Kartei({ creators, claims, onToggleWatch }: Props) {
             <div className="creator-claims-list">
               <h4>Aktuelle Claims</h4>
               {creatorClaims.slice(0, 4).map((claim) => (
-                <article key={claim.id}>
-                  <strong>{claim.claim}</strong>
-                  <span>{claim.sourceVideo.title}</span>
-                </article>
+                onOpenClaim ? (
+                  <button key={claim.id} type="button" className="creator-claim-link" onClick={() => onOpenClaim(claim.id)}>
+                    <strong>{claim.claim}</strong>
+                    <span>{claim.sourceVideo.title} · → Vollprüfung</span>
+                  </button>
+                ) : (
+                  <article key={claim.id}>
+                    <strong>{claim.claim}</strong>
+                    <span>{claim.sourceVideo.title}</span>
+                  </article>
+                )
               ))}
             </div>
             <button className="primary-btn" onClick={() => exportDossier(selected)}>

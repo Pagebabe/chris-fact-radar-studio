@@ -11,6 +11,7 @@
 
 .topbar, .global-status, .inbox-header, .today-cockpit, .pack-header {
   background: var(--glass);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
 
@@ -319,6 +320,7 @@
 }
 
 .pack-overlay {
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -1074,6 +1076,139 @@ button.claim-thumb-frame:hover .claim-thumb-play {
   border: 0;
 }
 
+/* ===== Verzahnung der drei Bausteine: Vollprüfung · Chris-Wissen · Science ===== */
+
+/* Quernavigations-Link am Panel-Ende (z.B. Chris-Position -> Chris-Wissen) */
+.panel-crosslink {
+  margin-top: 10px;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--accent, #67e8f9);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  text-align: left;
+}
+
+.panel-crosslink:hover {
+  text-decoration: underline;
+}
+
+.panel-footnote {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  opacity: 0.62;
+}
+
+/* KB-Herkunft im Chris-Wissen: automatisch erzeugte Positionen kennzeichnen */
+.kb-origin-badge {
+  background: rgba(251, 191, 36, 0.14);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #b45309;
+}
+
+.kb-disclaimer {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  opacity: 0.66;
+}
+
+.kb-disclaimer a {
+  text-decoration: underline;
+}
+
+/* Gegner-Claim -> Vollprüfung Sprung */
+.myth-open-case {
+  border: 1px solid var(--radar-line, rgba(148, 163, 184, 0.3));
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.myth-open-case:hover {
+  border-color: var(--accent, #67e8f9);
+  color: var(--accent, #67e8f9);
+}
+
+/* Kartei: Claim-Eintrag klickt in die Vollprüfung */
+.creator-claim-link {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  border: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.creator-claim-link:hover {
+  background: rgba(103, 232, 249, 0.08);
+}
+
+.creator-claim-link span {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* Science: Filterleiste + Fall-Bezug-Chip */
+.science-filterbar {
+  display: grid;
+  gap: 10px;
+}
+
+.science-topic-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.science-topic-chips .chip {
+  cursor: pointer;
+  border: 1px solid var(--radar-line, rgba(148, 163, 184, 0.3));
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.science-topic-chips .chip.active {
+  border-color: var(--accent, #67e8f9);
+  background: rgba(103, 232, 249, 0.14);
+}
+
+.science-claim-chip {
+  margin-top: 8px;
+  border: 1px solid rgba(103, 232, 249, 0.45);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(103, 232, 249, 0.1);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  text-align: left;
+}
+
+.science-claim-chip:hover {
+  background: rgba(103, 232, 249, 0.22);
+}
+
 .claim-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1452,6 +1587,7 @@ button.claim-thumb-frame:hover .claim-thumb-play {
   align-items: stretch;
   padding: 18px;
   background: rgba(15, 23, 42, 0.38);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -1477,6 +1613,7 @@ button.claim-thumb-frame:hover .claim-thumb-play {
   padding: 18px 20px;
   border-bottom: 1px solid var(--line);
   background: var(--glass);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
 

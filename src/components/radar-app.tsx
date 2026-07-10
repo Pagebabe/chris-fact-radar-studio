@@ -30,6 +30,7 @@ import { compactNumber, dateLabel, percent, reachScore } from "@/lib/format";
 import { buildMythClusters, isHot, preserveViewHistory, videoVelocity } from "@/lib/myths";
 import { buildCreatorDossiers, claimPriority } from "@/lib/creators";
 import { matchClaimToTruths } from "@/lib/truth";
+import { matchScienceToClaim } from "@/lib/science-match";
 import { buildFallbackPack, buildPackMarkdown } from "@/lib/pack";
 import { loadSettings } from "@/lib/settings";
 import { Teleprompter } from "./teleprompter";
@@ -380,6 +381,12 @@ export function RadarApp() {
     setActiveView("cases");
   }
 
+  // Quernavigation aus Chris-Wissen, Science und Kartei in die Vollprüfung.
+  function openClaimById(id: string) {
+    const item = items.find((entry) => entry.id === id);
+    if (item) openCase(item);
+  }
+
   function decideSelected(decision: "accepted" | "rejected") {
     if (!selected) {
       setStatus("Kein Fall ausgewählt.");
@@ -527,17 +534,17 @@ export function RadarApp() {
       )}
       {activeView === "kartei" && (
         <div className="view-container">
-          <Kartei creators={derivedCreators} claims={items} onToggleWatch={handleToggleWatch} />
+          <Kartei creators={derivedCreators} claims={items} onToggleWatch={handleToggleWatch} onOpenClaim={openClaimById} />
         </div>
       )}
       {activeView === "lexikon" && (
         <div className="view-container">
-          <Lexikon claims={items} truths={truths} />
+          <Lexikon claims={items} truths={truths} onOpenClaim={openClaimById} />
         </div>
       )}
       {activeView === "science" && (
         <div className="view-container">
-          <ScienceView items={scienceItems} />
+          <ScienceView items={scienceItems} claims={items} onOpenClaim={openClaimById} />
         </div>
       )}
       {activeView === "hunter" && (
@@ -727,10 +734,12 @@ export function RadarApp() {
           <ClaimInspector
             item={selected}
             truths={truths}
+            scienceItems={scienceItems}
             onExport={copyExport}
             onDecide={decideSelected}
             onTeleprompter={openTeleprompter}
             onContentPack={openContentPack}
+            onOpenLexikon={() => setActiveView("lexikon")}
             isScripting={isScripting}
             isPacking={packingId === selected.id}
           />
@@ -1142,19 +1151,23 @@ function TodayCockpit({
 function ClaimInspector({
   item,
   truths,
+  scienceItems,
   onExport,
   onDecide,
   onTeleprompter,
   onContentPack,
+  onOpenLexikon,
   isScripting,
   isPacking,
 }: {
   item: ClaimItem;
   truths: TruthRecord[];
+  scienceItems?: ScienceItem[];
   onExport: () => void;
   onDecide: (decision: "accepted" | "rejected") => void;
   onTeleprompter: () => void;
   onContentPack: (item: ClaimItem) => void;
+  onOpenLexikon?: () => void;
   isScripting: boolean;
   isPacking: boolean;
 }) {
@@ -1163,6 +1176,8 @@ function ClaimInspector({
   // Chris' eigene Position: falls die Analyse schon eine gefunden hat, diese
   // nehmen; sonst live gegen die (Store + eingebaute KB) Truth Base matchen.
   const chrisPosition = item.chrisPosition ?? matchClaimToTruths(item.claim, truths);
+  // Passende Studien aus dem Wissenschafts-Brief (lokales Matching, kein LLM).
+  const scienceMatches = matchScienceToClaim(item.claim, item.category, scienceItems ?? []);
   const sparkline = (item.sourceVideo.viewHistory ?? []).map((snapshot) => ({
     at: snapshot.at.slice(11, 16),
     views: snapshot.views,
@@ -1291,6 +1306,11 @@ function ClaimInspector({
                 <a href="/knowledge-base" style={{ textDecoration: "underline" }}>Wie die Wissensbasis entsteht</a>
               </p>
             )}
+            {onOpenLexikon && (
+              <button type="button" className="panel-crosslink" onClick={onOpenLexikon}>
+                Alle Positionen im Chris-Wissen →
+              </button>
+            )}
           </section>
         )}
 
@@ -1319,6 +1339,25 @@ function ClaimInspector({
             ))}
           </div>
         </section>
+
+        {scienceMatches.length > 0 && (
+          <section className="panel inspector-science" aria-label="Studienlage aus dem Wissenschafts-Brief">
+            <h3>🔬 Studienlage</h3>
+            <div className="evidence-list">
+              {scienceMatches.map((match) => (
+                <a key={match.id} className="evidence-item" href={match.url} target="_blank" rel="noreferrer">
+                  <div className="evidence-head">
+                    <strong>{match.source}</strong>
+                    <span className="chip">{match.topic}</span>
+                  </div>
+                  <p>{match.title}</p>
+                  <p>💡 {match.contentIdea}</p>
+                </a>
+              ))}
+            </div>
+            <p className="panel-footnote">Aus dem Wissenschafts-Brief — lokal per Text-Ähnlichkeit zugeordnet, vor Nutzung prüfen.</p>
+          </section>
+        )}
 
         {item.responseBlocks && (
           <section className="panel">

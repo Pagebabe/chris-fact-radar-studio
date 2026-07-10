@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ClaimItem, TruthRecord } from "@/lib/types";
 import { buildMythClusters } from "@/lib/myths";
+import { POSITION_DISCLAIMER, bundledTruths } from "@/lib/source-safety";
 import { ChrisScanner } from "./chris-scanner";
 import { TruthImporter } from "./truth-importer";
 
-type Props = { claims: ClaimItem[]; truths: TruthRecord[] };
+type Props = { claims: ClaimItem[]; truths: TruthRecord[]; onOpenClaim?: (id: string) => void };
 type KnowledgeTab = "scanner" | "importer" | "wahrheit" | "mythen";
 
-export function Lexikon({ claims, truths }: Props) {
+export function Lexikon({ claims, truths, onOpenClaim }: Props) {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<KnowledgeTab>("scanner");
   const [localTruths, setLocalTruths] = useState<TruthRecord[]>([]);
@@ -26,7 +27,11 @@ export function Lexikon({ claims, truths }: Props) {
     return () => { cancelled = true; };
   }, []);
 
-  const allTruths = useMemo(() => mergeTruths([...localTruths, ...serverTruths, ...truths]), [localTruths, serverTruths, truths]);
+  // Geprüfte Einträge (Store/manuell/Session) zuerst, dann die automatische KB —
+  // mergeTruths dedupliziert per id, geprüfte gewinnen bei Kollision.
+  const allTruths = useMemo(() => mergeTruths([...bundledTruths, ...localTruths, ...serverTruths, ...truths]), [localTruths, serverTruths, truths]);
+  const reviewedCount = useMemo(() => allTruths.filter((t) => t.origin !== "kb-bundle").length, [allTruths]);
+  const autoCount = allTruths.length - reviewedCount;
 
   const flaggedClaims = useMemo(() => claims.filter((c) => c.verdict === "misleading" || c.verdict === "likely_false"), [claims]);
   const clusters = useMemo(() => buildMythClusters(flaggedClaims), [flaggedClaims]);
@@ -58,14 +63,15 @@ export function Lexikon({ claims, truths }: Props) {
           </p>
         </div>
         <div className="knowledge-score-card">
-          <span>Freigegeben</span>
+          <span>Referenzbasis</span>
           <strong>{allTruths.length}</strong>
-          <small>öffentliche Positionen</small>
+          <small>{reviewedCount} geprüft · {autoCount} automatisch (KB)</small>
         </div>
       </section>
 
       <section className="knowledge-stats" aria-label="Chris-Wissen Übersicht">
-        <div className="knowledge-stat"><strong>{allTruths.length}</strong><span>freigegebene O-Töne</span></div>
+        <div className="knowledge-stat"><strong>{reviewedCount}</strong><span>geprüfte O-Töne</span></div>
+        <div className="knowledge-stat"><strong>{autoCount}</strong><span>automatische KB-Positionen <a href="/knowledge-base">ℹ︎</a></span></div>
         <div className="knowledge-stat"><strong>{publicReferenceCount}</strong><span>öffentliche Referenzen</span></div>
         <div className="knowledge-stat"><strong>{guardedClaims}</strong><span>Claims mit Abgleichschutz</span></div>
         <div className="knowledge-stat"><strong>{topTopics.length}</strong><span>geschützte Themenfelder</span></div>
@@ -125,9 +131,28 @@ export function Lexikon({ claims, truths }: Props) {
       {activeTab === "wahrheit" && (
         <div className="knowledge-list">
           {filteredTruths.length === 0 && <p className="lexikon-empty">Noch keine passende Position gefunden. Nutze Quellen & Review oder pflege einen O-Ton manuell ein.</p>}
-          {filteredTruths.map((truth) => (
-            <article key={truth.id} className="knowledge-truth-card"><div className="knowledge-card-head"><span className="truth-topic">{truth.topic}</span><span className="chip">{Math.round((truth.confidence ?? 0.9) * 100)}% sicher</span></div><h3>{truth.statement}</h3><blockquote>&bdquo;{truth.quote}&ldquo;</blockquote><div className="knowledge-card-foot"><a href={truth.url} target="_blank" rel="noopener noreferrer">{truth.videoTitle} ↗</a><span>{new Date(truth.publishedAt).toLocaleDateString("de-DE")}</span></div></article>
-          ))}
+          {filteredTruths.map((truth) => {
+            const isAuto = truth.origin === "kb-bundle";
+            return (
+              <article key={truth.id} className="knowledge-truth-card">
+                <div className="knowledge-card-head">
+                  <span className="truth-topic">{truth.topic}</span>
+                  {isAuto
+                    ? <span className="chip kb-origin-badge">Auto · YouTube-Untertitel</span>
+                    : <span className="chip">{Math.round((truth.confidence ?? 0.9) * 100)}% sicher</span>}
+                </div>
+                <h3>{truth.statement}</h3>
+                {!isAuto && <blockquote>&bdquo;{truth.quote}&ldquo;</blockquote>}
+                <div className="knowledge-card-foot">
+                  <a href={truth.url} target="_blank" rel="noopener noreferrer">{truth.videoTitle} ↗</a>
+                  {truth.publishedAt && <span>{new Date(truth.publishedAt).toLocaleDateString("de-DE")}</span>}
+                </div>
+                {isAuto && (
+                  <p className="kb-disclaimer">⚠ {POSITION_DISCLAIMER} <a href="/knowledge-base">Details</a></p>
+                )}
+              </article>
+            );
+          })}
         </div>
       )}
 
@@ -136,7 +161,7 @@ export function Lexikon({ claims, truths }: Props) {
           {filteredClusters.length === 0 && <p className="lexikon-empty">Noch keine Gegner-Claims dokumentiert.</p>}
           {filteredClusters.map((cluster) => {
             const clusterClaims = flaggedClaims.filter((c) => cluster.itemIds.includes(c.id));
-            return <article key={cluster.id} className="knowledge-myth-card"><div className="knowledge-card-head"><span className="truth-topic">{cluster.topCategory}</span><span className="chip warn">{cluster.count}× dokumentiert</span><span className="chip">{(cluster.totalViews / 1_000_000).toFixed(1)} Mio. Views</span></div><h3>{cluster.label}</h3><ul className="knowledge-claim-list">{clusterClaims.slice(0, 4).map((claim) => <li key={claim.id}>{claim.sourceVideo.thumbnail && <img src={claim.sourceVideo.thumbnail} alt="" loading="lazy" />}<div><a href={claim.sourceVideo.url} target="_blank" rel="noopener noreferrer">{claim.sourceVideo.creator}</a><p>&bdquo;{claim.claim.slice(0, 120)}{claim.claim.length > 120 ? "…" : ""}&ldquo;</p></div><span>{(claim.sourceVideo.views / 1000).toFixed(0)}k</span></li>)}</ul></article>;
+            return <article key={cluster.id} className="knowledge-myth-card"><div className="knowledge-card-head"><span className="truth-topic">{cluster.topCategory}</span><span className="chip warn">{cluster.count}× dokumentiert</span><span className="chip">{(cluster.totalViews / 1_000_000).toFixed(1)} Mio. Views</span></div><h3>{cluster.label}</h3><ul className="knowledge-claim-list">{clusterClaims.slice(0, 4).map((claim) => <li key={claim.id}>{claim.sourceVideo.thumbnail && <img src={claim.sourceVideo.thumbnail} alt="" loading="lazy" />}<div><a href={claim.sourceVideo.url} target="_blank" rel="noopener noreferrer">{claim.sourceVideo.creator}</a><p>&bdquo;{claim.claim.slice(0, 120)}{claim.claim.length > 120 ? "…" : ""}&ldquo;</p></div><span>{(claim.sourceVideo.views / 1000).toFixed(0)}k</span>{onOpenClaim && <button type="button" className="myth-open-case" onClick={() => onOpenClaim(claim.id)}>→ Vollprüfung</button>}</li>)}</ul></article>;
           })}
         </div>
       )}
