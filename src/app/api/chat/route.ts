@@ -223,11 +223,16 @@ function actionsFor(message: string, claims: ClaimItem[], selectedClaimId?: stri
 }
 
 function isSecretRequest(lower: string) {
-  return /(openai_api_key|cron_secret|app_admin_token|service.role|api[-_ ]?key|secret|token|bypass)/i.test(lower);
+  // Wortgrenzen, damit Feature-Fragen wie "Secretary" nicht als Secret-Anfrage
+  // fehlklassifiziert werden ("secretary" enthält "secret" nur als Substring).
+  return /(openai_api_key|cron_secret|app_admin_token|service.role|api[-_ ]?key)/i.test(lower)
+    || /\b(secrets?|tokens?|bypass)\b/i.test(lower);
 }
 
 function isMemoryRecallRequest(lower: string) {
-  return /(vorherig|unmittelbar vorher|eben|zuvor|wiederhole exakt).{0,80}(antwort|punkte|gesagt|genannt|geschrieben)/i.test(lower)
+  // "\beben\b" statt Substring: "Nebenwirkungen", "gegeben", "Leben" dürfen
+  // keine falsche "kein Gedächtnis"-Antwort auslösen.
+  return /(\bvorherige?n?\b|\bvorher\b|unmittelbar davor|\beben\b|\bzuvor\b|wiederhole exakt).{0,80}\b(antworten?|punkten?|gesagt|genannt|geschrieben)\b/i.test(lower)
     || /(was hast du mir|woran erinnerst du dich)/i.test(lower);
 }
 
@@ -307,9 +312,16 @@ function groundedClaimReply(claim: ClaimItem) {
   ].join("\n\n");
 }
 
-function unsupportedCitation(reply: string, claim?: ClaimItem) {
-  if (!claim || (claim.evidence?.length ?? 0) > 0) return false;
-  return /\b(?:19|20)\d{2}\b|\b(?:doi|pmid|pubmed|plos|journal|meta-analyse|randomisiert)\b|studie\s+(?:von|aus|im jahr)/i.test(reply);
+function unsupportedCitation(reply: string, claims: ClaimItem[], selected?: ClaimItem) {
+  // Nicht nur den selektierten Claim absichern: Zitiermuster sind nur dann
+  // gedeckt, wenn im Kontext überhaupt Evidence existiert UND der besprochene
+  // (selektierte) Claim welche hat. Sonst gilt jede Studien-/Jahresnennung
+  // als unbelegt und die Antwort fällt auf die geerdete Variante zurück.
+  const citationPattern = /\b(?:19|20)\d{2}\b|\b(?:doi|pmid|pubmed|plos|journal|meta-analyse|randomisiert)\b|studie\s+(?:von|aus|im jahr)/i;
+  if (!citationPattern.test(reply)) return false;
+  const anyEvidence = claims.some((claim) => (claim.evidence?.length ?? 0) > 0);
+  if (!anyEvidence) return true;
+  return Boolean(selected && (selected.evidence?.length ?? 0) === 0);
 }
 
 function fallbackReply(message: string, body: ChatRequest, truths: TruthRecord[]) {
@@ -447,7 +459,7 @@ export async function POST(request: Request) {
 
   if (llmConfigured() && !forceFallback) {
     const { reply, reason } = await callWithChecker(userPrompt, SYSTEM_PROMPT);
-    if (reply && !unsupportedCitation(reply, selectedClaim)) {
+    if (reply && !unsupportedCitation(reply, claims, selectedClaim)) {
       return chatResponse({
         reply,
         source: "llm",
@@ -458,7 +470,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const safeReply = selectedClaim && unsupportedCitation(reply ?? "", selectedClaim)
+    const safeReply = selectedClaim && unsupportedCitation(reply ?? "", claims, selectedClaim)
       ? groundedClaimReply(selectedClaim)
       : fallbackReply(message, body, truths);
 

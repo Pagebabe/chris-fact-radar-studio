@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { llmConfigured, opusProxyBaseUrl, opusProxyKey, opusProxyModel } from "@/lib/llm";
+import { rateLimit } from "@/lib/rate-limit";
 
 function providerInfo() {
   return {
@@ -42,6 +43,11 @@ async function callOpenAiCompatible(baseUrl: string, apiKey: string, model: stri
 }
 
 export async function GET(request: Request) {
+  // Fail-open by design when no admin token is set — the rate limit keeps the
+  // live provider call from becoming an unbounded public cost path.
+  const limited = rateLimit(request, { key: "llm-test", limit: 6, windowMs: 60_000 });
+  if (limited) return limited;
+
   const url = new URL(request.url);
   const live = url.searchParams.get("mode") === "live";
   const dryRun = url.searchParams.get("dryRun") === "1" || request.headers.get("x-diagnostics-dry-run") === "1";

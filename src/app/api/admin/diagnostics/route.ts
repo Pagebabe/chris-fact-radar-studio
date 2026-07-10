@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     },
     protectedRoutes: [
       "POST /api/admin/manual-seed-cases?confirm=manual-seed-cases",
-      "GET /api/admin/seed-debate-cases?confirm=seed-debate-cases",
+      "POST /api/admin/seed-debate-cases?confirm=seed-debate-cases",
       "GET /api/admin/seed-real-cases",
       "GET /api/admin/diagnostics",
     ],
