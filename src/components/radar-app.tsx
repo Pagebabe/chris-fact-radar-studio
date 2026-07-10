@@ -398,10 +398,14 @@ export function RadarApp() {
     switch (action.type) {
       case "openClaim":
       case "openCases":
-      case "createBrief":
-        if (action.claimId) openClaimById(action.claimId);
+      case "createBrief": {
+        // Bei fehlender ODER unbekannter Claim-ID nicht ins Leere laufen,
+        // sondern die Vollprüfung öffnen.
+        const found = action.claimId ? items.find((entry) => entry.id === action.claimId) : undefined;
+        if (found) openCase(found);
         else setActiveView("cases");
         break;
+      }
       case "runIntake":
         setActiveView("hunter");
         break;

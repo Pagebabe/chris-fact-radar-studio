@@ -391,6 +391,37 @@ test("secretary chat renders action buttons and a playable cited video", async (
   await expect(page.getByRole("region", { name: "Aussagen-Posteingang" })).toBeVisible();
 });
 
+test("playing a cited video does not auto-play the same claim in a later answer", async ({ page }) => {
+  await stubStudioApis(page, [debateClaim]);
+  await page.route("**/api/chat", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        reply: "Antwort mit zitiertem Debatten-Video.",
+        source: "system",
+        actions: [],
+        citedClaimIds: [debateClaim.id],
+      },
+    }),
+  );
+  await page.goto("/studio");
+  const box = page.getByPlaceholder("Frag den Secretary zu einem Treffer …");
+
+  // Erste Antwort: Video abspielen.
+  await box.fill("Frage eins");
+  await page.getByRole("button", { name: "Senden" }).click();
+  await page.getByRole("button", { name: /Video starten: Streit eskaliert komplett/ }).click();
+  await expect(page.locator("iframe")).toHaveCount(1);
+
+  // Zweite Antwort zitiert denselben Claim — darf NICHT automatisch als iframe starten.
+  await box.fill("Frage zwei");
+  await page.getByRole("button", { name: "Senden" }).click();
+  await expect(page.getByText("Antwort mit zitiertem Debatten-Video.")).toHaveCount(2);
+  // Weiterhin nur EIN iframe (das manuell gestartete); der zweite Chip bleibt Thumbnail-Button.
+  await expect(page.locator("iframe")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: /Video starten: Streit eskaliert komplett/ })).toHaveCount(1);
+});
+
 test("secretary conversation survives a view switch (visual history)", async ({ page }) => {
   await stubStudioApis(page, [debateClaim]);
   await page.route("**/api/chat", (route) =>

@@ -47,7 +47,9 @@ export function SecretaryChat({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+  // Play-State pro Chip eindeutig (Nachricht + Claim). Nur claim.id würde
+  // denselben Claim in mehreren Antworten gleichzeitig abspielen (autoplay=1).
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   async function send(text: string) {
@@ -127,7 +129,8 @@ export function SecretaryChat({
 
               {videoClaims(m.citedClaimIds).map((claim) => {
                 const embedUrl = youtubeEmbedUrl(claim.sourceVideo.url);
-                const isPlaying = playingVideoId === claim.id;
+                const videoKey = `${i}:${claim.id}`;
+                const isPlaying = playingKey === videoKey;
                 return (
                   <div key={claim.id} className="secretary-video">
                     {isPlaying && embedUrl ? (
@@ -142,7 +145,7 @@ export function SecretaryChat({
                       <button
                         type="button"
                         className="secretary-video-button"
-                        onClick={() => setPlayingVideoId(claim.id)}
+                        onClick={() => setPlayingKey(videoKey)}
                         aria-label={`Video starten: ${claim.sourceVideo.title}`}
                       >
                         <img className="secretary-video-thumb" src={claim.sourceVideo.thumbnail || undefined} alt="" loading="lazy" />
