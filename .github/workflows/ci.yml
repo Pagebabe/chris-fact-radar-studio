@@ -8,9 +8,9 @@ on:
 
 jobs:
   verify:
-    name: Verify MVP gates
+    name: Verify product gates
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -25,8 +25,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Interaction security audit
+        run: npm run audit:interactions
+
       - name: Lint
         run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Build
         run: npm run build
@@ -60,12 +66,13 @@ jobs:
           SUPABASE_URL: ""
           SUPABASE_SERVICE_ROLE_KEY: ""
 
-      - name: Upload Playwright artifacts
+      - name: Upload verification artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts
+          name: verification-artifacts
           path: |
             playwright-report
             test-results
+            artifacts
           if-no-files-found: ignore
