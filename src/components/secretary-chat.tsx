@@ -99,9 +99,17 @@ export function SecretaryChat({
 
   function videoClaims(citedClaimIds?: string[]) {
     if (!citedClaimIds?.length) return [];
-    return citedClaimIds
-      .map((id) => items.find((item) => item.id === id))
-      .filter((item): item is ClaimItem => Boolean(item && item.sourceVideo?.thumbnail && youtubeEmbedUrl(item.sourceVideo.url)));
+    const seen = new Set<string>();
+    const result: ClaimItem[] = [];
+    for (const id of citedClaimIds) {
+      const item = items.find((entry) => entry.id === id);
+      const embed = item?.sourceVideo?.url ? youtubeEmbedUrl(item.sourceVideo.url) : null;
+      // Pro Video nur ein Chip: mehrere Claims teilen sich oft dasselbe Quellvideo.
+      if (!item || !item.sourceVideo?.thumbnail || !embed || seen.has(embed)) continue;
+      seen.add(embed);
+      result.push(item);
+    }
+    return result;
   }
 
   const rendered: ChatMsg[] = [{ role: "assistant", content: intro }, ...messages];
