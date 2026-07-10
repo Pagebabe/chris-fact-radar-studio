@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdminStrict } from "@/lib/admin-auth";
 import { DEBATE_CANONICAL_URLS, DEBATE_VIDEO_ID } from "@/lib/debate-claims";
 import { upsertClaims } from "@/lib/store";
 import type { ClaimItem, SourceVideo } from "@/lib/types";
@@ -60,12 +60,12 @@ function makeClaim(seed: typeof seeds[number]): ClaimItem {
 }
 
 export async function GET(request: Request) {
-  const unauthorized = requireAdmin(request);
+  const unauthorized = requireAdminStrict(request);
   if (unauthorized) return unauthorized;
 
   const url = new URL(request.url);
   if (url.searchParams.get("confirm") !== "seed-debate-cases") {
-    return NextResponse.json({ ok: false, error: "Use confirm=seed-debate-cases." }, { status: 401 });
+    return NextResponse.json({ ok: false, error: "Use confirm=seed-debate-cases." }, { status: 400 });
   }
   const claims = seeds.map(makeClaim);
   const saved = await upsertClaims(claims);
