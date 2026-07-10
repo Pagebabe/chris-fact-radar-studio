@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUpRight, Check, ClipboardPlus, Database, Loader2, Radar, ShieldAlert, Sparkles, X } from "lucide-react";
 import { compactNumber, dateLabel } from "@/lib/format";
 import type { HunterCandidate, HunterProfile, HunterRun } from "@/lib/types";
 
 type Props = {
   configured: boolean;
-  canWrite: boolean;
   profiles: HunterProfile[];
   candidates: HunterCandidate[];
   runs: HunterRun[];
@@ -98,9 +97,19 @@ function hunterRunSummary(run?: HunterRun) {
     : "0 neue Qualitäts-Kandidaten. Häufige Gründe: Duplikate, zu wenig Reichweite, keine klare deutschsprachige Aussage oder fehlendes Transkript.";
 }
 
-export function HunterView({ configured, canWrite, profiles, candidates, runs, isRunning, onRun, onPromote, onReject }: Props) {
+export function HunterView({ configured, profiles, candidates, runs, isRunning, onRun, onPromote, onReject }: Props) {
   const [manual, setManual] = useState(EMPTY_MANUAL);
   const [manualStatus, setManualStatus] = useState<string>("");
+  const [canWrite, setCanWrite] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/claims")
+      .then((response) => response.json() as Promise<{ writable?: boolean }>)
+      .then((data) => { if (!cancelled) setCanWrite(Boolean(data.writable)); })
+      .catch(() => { if (!cancelled) setCanWrite(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const pending = candidates.filter((c) => c.status === "new" || c.status === "triaged" || c.status === "needs_transcript");
   const topCandidates = pending.sort((a, b) => b.score - a.score).slice(0, 6);
@@ -167,50 +176,28 @@ export function HunterView({ configured, canWrite, profiles, candidates, runs, i
 
       <div className="hunter-grid hunter-command-grid">
         <section className="hunter-card">
-          <div className="hunter-card-head">
-            <ShieldAlert size={18} />
-            <h3>Suchprofile</h3>
-          </div>
+          <div className="hunter-card-head"><ShieldAlert size={18} /><h3>Suchprofile</h3></div>
           <div className="profile-list">
             {profiles.length ? profiles.slice(0, 4).map((profile) => (
-              <article key={profile.id}>
-                <strong>{profile.name}</strong>
-                <p>{profile.platforms.join(" · ")} · min. {compactNumber(profile.minViews)} Views · Score {profile.minScore}+</p>
-                <span>{profile.queries.slice(0, 2).join(" / ")}</span>
-              </article>
+              <article key={profile.id}><strong>{profile.name}</strong><p>{profile.platforms.join(" · ")} · min. {compactNumber(profile.minViews)} Views · Score {profile.minScore}+</p><span>{profile.queries.slice(0, 2).join(" / ")}</span></article>
             )) : <p className="empty-state">Noch kein Suchprofil geladen. Prüfe Supabase oder lege ein Profil an.</p>}
           </div>
         </section>
 
         <section className="hunter-card">
-          <div className="hunter-card-head">
-            <Radar size={18} />
-            <h3>Letzter Lauf</h3>
-          </div>
+          <div className="hunter-card-head"><Radar size={18} /><h3>Letzter Lauf</h3></div>
           <p className="candidate-review-note">{hunterRunSummary(latestRun)}</p>
           {latestRun?.errors?.length ? <p className="candidate-review-note">Hinweis: {latestRun.errors.slice(0, 2).join(" · ")}</p> : null}
         </section>
 
         <section className="hunter-card">
-          <div className="hunter-card-head">
-            <Database size={18} />
-            <h3>Datenbank-Asset</h3>
-          </div>
-          <div className="hunter-mini-stats">
-            <span><strong>{metadataAssets}</strong> Metadata-Assets</span>
-            <span><strong>{transcriptReady}</strong> transcript-ready</span>
-            <span><strong>{transcriptNeeded}</strong> warten auf Sprache</span>
-          </div>
-          <p className="candidate-review-note">
-            Plattformen: {platformsTracked.length ? platformsTracked.join(" · ") : "noch keine"}. Claims entstehen erst nach verifiziertem gesprochenem Wort.
-          </p>
+          <div className="hunter-card-head"><Database size={18} /><h3>Datenbank-Asset</h3></div>
+          <div className="hunter-mini-stats"><span><strong>{metadataAssets}</strong> Metadata-Assets</span><span><strong>{transcriptReady}</strong> transcript-ready</span><span><strong>{transcriptNeeded}</strong> warten auf Sprache</span></div>
+          <p className="candidate-review-note">Plattformen: {platformsTracked.length ? platformsTracked.join(" · ") : "noch keine"}. Claims entstehen erst nach verifiziertem gesprochenem Wort.</p>
         </section>
 
         <section className="hunter-card">
-          <div className="hunter-card-head">
-            <Sparkles size={18} />
-            <h3>Nächster Schritt</h3>
-          </div>
+          <div className="hunter-card-head"><Sparkles size={18} /><h3>Nächster Schritt</h3></div>
           {topCandidates.length ? (
             <div className="candidate-list">
               {topCandidates.map((candidate) => (
@@ -218,14 +205,8 @@ export function HunterView({ configured, canWrite, profiles, candidates, runs, i
                   <div>
                     <strong>{candidate.title}</strong>
                     <p>{candidate.creator} · {candidate.platform} · {compactNumber(candidate.views)} Views · Score {candidate.score}</p>
-                    <div className="candidate-meta-row" aria-label="Analysebasis">
-                      <span className="status-pill">Quelle: {transcriptSourceLabel(candidate)}</span>
-                      <span className={transcriptQuality(candidate) === "stark" ? "status-pill ok" : "status-pill warn"}>Transkriptqualität: {transcriptQuality(candidate)}</span>
-                      <span className="status-pill">Status: {reviewStatus(candidate)}</span>
-                    </div>
-                    <div className="candidate-meta-row" aria-label="Market-Intelligence-Basis">
-                      <span className="status-pill">Market-Lane: {marketLaneLabel(candidate)}</span>
-                    </div>
+                    <div className="candidate-meta-row" aria-label="Analysebasis"><span className="status-pill">Quelle: {transcriptSourceLabel(candidate)}</span><span className={transcriptQuality(candidate) === "stark" ? "status-pill ok" : "status-pill warn"}>Transkriptqualität: {transcriptQuality(candidate)}</span><span className="status-pill">Status: {reviewStatus(candidate)}</span></div>
+                    <div className="candidate-meta-row" aria-label="Market-Intelligence-Basis"><span className="status-pill">Market-Lane: {marketLaneLabel(candidate)}</span></div>
                     <span>{candidatePreview(candidate)}</span>
                     <p className="candidate-review-note">{reviewNote(candidate)}</p>
                     {candidate.qualityReason && <p className="candidate-review-note">Qualitätsgrund: {candidate.qualityReason}</p>}
@@ -238,19 +219,12 @@ export function HunterView({ configured, canWrite, profiles, candidates, runs, i
               ))}
             </div>
           ) : (
-            <p className="empty-state">
-              {canWrite
-                ? "Noch keine offenen Prüfkandidaten. Starte einen Lauf oder importiere einen Claim manuell. Wenn ein Lauf 0 Kandidaten liefert, zeigt die Karte „Letzter Lauf“ die Filtergründe."
-                : "Noch keine offenen Prüfkandidaten. Starte den öffentlichen Live-Radar. Import, Übernahme und Ablehnung sind in der Prüfansicht absichtlich schreibgeschützt."}
-            </p>
+            <p className="empty-state">{canWrite ? "Noch keine offenen Prüfkandidaten. Starte einen Lauf oder importiere einen Claim manuell. Wenn ein Lauf 0 Kandidaten liefert, zeigt die Karte „Letzter Lauf“ die Filtergründe." : "Noch keine offenen Prüfkandidaten. Starte den öffentlichen Live-Radar. Import, Übernahme und Ablehnung sind in der Prüfansicht absichtlich schreibgeschützt."}</p>
           )}
         </section>
 
         <section className="hunter-card">
-          <div className="hunter-card-head">
-            <ClipboardPlus size={18} />
-            <h3>Claim einwerfen</h3>
-          </div>
+          <div className="hunter-card-head"><ClipboardPlus size={18} /><h3>Claim einwerfen</h3></div>
           {canWrite ? (
             <form className="manual-claim-form" onSubmit={submitManual}>
               <input value={manual.url} onChange={(e) => setManual((m) => ({ ...m, url: e.target.value }))} placeholder="YouTube-/Social-URL" />
@@ -260,9 +234,7 @@ export function HunterView({ configured, canWrite, profiles, candidates, runs, i
               <textarea value={manual.note} onChange={(e) => setManual((m) => ({ ...m, note: e.target.value }))} placeholder="Notiz / Kontext" />
               <button className="primary-btn" type="submit"><ArrowUpRight size={16} /> Als Prüfkandidat speichern</button>
             </form>
-          ) : (
-            <p className="empty-state">Öffentliche Prüfer können den Intake starten und Ergebnisse ansehen. Das Schreiben in die gemeinsame Queue bleibt Admins vorbehalten.</p>
-          )}
+          ) : <p className="empty-state">Öffentliche Prüfer können den Intake starten und Ergebnisse ansehen. Das Schreiben in die gemeinsame Queue bleibt Admins vorbehalten.</p>}
           {manualStatus && <p className="manual-status">{manualStatus}</p>}
         </section>
       </div>
