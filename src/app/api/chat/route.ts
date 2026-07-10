@@ -102,6 +102,13 @@ function replyProblem(text: string | null | undefined): LlmFailure | null {
     return "invalid-response";
   }
 
+  // Korrupte Provider-Ausgaben abfangen: Indische/CJK/Hangul-Zeichen mitten in
+  // einer deutschen Antwort sind Token-Müll (z.B. "wissenschaftಾಸchen"), kein
+  // legitimer Inhalt — lieber Retry/Fallback als kaputter Text im Produkt.
+  if (/[ऀ-෿぀-ヿ一-鿿가-힯]/.test(trimmed)) {
+    return "invalid-response";
+  }
+
   return null;
 }
 
