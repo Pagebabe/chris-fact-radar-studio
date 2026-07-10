@@ -6,11 +6,19 @@ import { storeConfigured } from "@/lib/store";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const commit = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || "local";
+  const ref = process.env.VERCEL_GIT_COMMIT_REF || process.env.GITHUB_REF_NAME || "local";
+
   return NextResponse.json({
     ok: true,
     app: "chris-fact-radar",
     status: "live",
     timestamp: new Date().toISOString(),
+    build: {
+      commit: commit === "local" ? commit : commit.slice(0, 12),
+      ref,
+      environment: process.env.VERCEL_ENV || process.env.NODE_ENV || "local",
+    },
     checks: {
       supabaseConfigured: storeConfigured(),
       llmConfigured: llmConfigured(),
@@ -25,7 +33,7 @@ export async function GET() {
       videoSourcePolicy: "apify-manual-source-urls",
     },
     notes: [
-      "This endpoint exposes configuration presence only, never secret values.",
+      "This endpoint exposes configuration presence and deployment identity only, never secret values.",
       "Use /status for the human-readable production status page.",
     ],
   });
