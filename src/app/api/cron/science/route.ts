@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { requireCronStrict } from "@/lib/cron-auth";
 import { opusProxyBaseUrl, opusProxyKey, opusProxyModel } from "@/lib/llm";
 import { upsertScienceItems } from "@/lib/store";
 import type { ScienceItem } from "@/lib/types";
@@ -8,8 +9,8 @@ export const maxDuration = 180;
 const TOPICS = ["Heißhunger", "Protein", "Insulin", "Supplements", "Fettverlust", "Zucker"];
 
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (secret !== process.env.CRON_SECRET) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const unauthorized = requireCronStrict(req);
+  if (unauthorized) return unauthorized;
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const items: ScienceItem[] = [];
