@@ -59,7 +59,7 @@ function makeClaim(seed: typeof seeds[number]): ClaimItem {
   };
 }
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   const unauthorized = requireAdminStrict(request);
   if (unauthorized) return unauthorized;
 
