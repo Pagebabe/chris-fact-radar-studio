@@ -38,13 +38,13 @@ const actions = [
     href: "/anti-heisshunger-system.pdf",
   },
   {
-    title: "2 · Studio: 16 geprüfte Cases",
+    title: "2 · Studio: geprüfte Cases",
     text: "Echte Fälle, Scores, Evidence und Review-Status ansehen.",
     href: "/studio",
   },
   {
     title: "3 · Intake / Jäger starten",
-    text: "Live-Crawler auslösen und echte Funde in der Queue sehen.",
+    text: "Apify-Intake auslösen und verifizierte Funde in der Queue sehen.",
     href: "/studio",
   },
   {
