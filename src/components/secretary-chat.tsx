@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = { role: "user" | "assistant"; content: string; badge?: string };
 
 type SecretaryChatProps = {
   claimCount: number;
@@ -25,7 +25,6 @@ export function SecretaryChat({ claimCount, topClaimText }: SecretaryChatProps) 
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [model, setModel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -43,12 +42,14 @@ export function SecretaryChat({ claimCount, topClaimText }: SecretaryChatProps) 
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ message: content }),
       });
-      const data = (await res.json()) as { reply?: string; model?: string; error?: string };
+      const data = (await res.json()) as { reply?: string; model?: string; source?: string; error?: string };
       if (!res.ok || !data.reply) {
         setError(data.error || "Keine Antwort erhalten.");
       } else {
-        setMessages((m) => [...m, { role: "assistant", content: data.reply as string }]);
-        if (data.model) setModel(data.model);
+        // Antwortquelle transparent machen: Fallback und Systemfakten dürfen
+        // nicht wie eine LLM-Antwort aussehen.
+        const badge = data.source === "llm" ? (data.model ?? "LLM") : data.source === "system" ? "Systemfakten" : "Fallback";
+        setMessages((m) => [...m, { role: "assistant", content: data.reply as string, badge }]);
       }
     } catch {
       setError("Netzwerkfehler — bitte erneut versuchen.");
@@ -64,7 +65,7 @@ export function SecretaryChat({ claimCount, topClaimText }: SecretaryChatProps) 
         {[{ role: "assistant" as const, content: intro }, ...messages].map((m, i) =>
           m.role === "assistant" ? (
             <div key={i} className="max-w-[90%] rounded-xl border border-cyan-300/20 bg-cyan-300/[0.07] p-4 text-slate-100">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-300">Secretary{model ? ` · ${model}` : ""}</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-300">Secretary{m.badge ? ` · ${m.badge}` : ""}</p>
               <p className="mt-1.5 whitespace-pre-wrap text-sm leading-6">{m.content}</p>
             </div>
           ) : (

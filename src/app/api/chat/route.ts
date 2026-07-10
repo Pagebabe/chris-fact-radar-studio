@@ -386,7 +386,9 @@ function fallbackReply(message: string, body: ChatRequest, truths: TruthRecord[]
   }
 
   if (selected) {
-    return `Nächster sinnvoller Schritt: „${selected.claim}“ prüfen. Risiko ${selected.riskScore}, Chris-Fit ${selected.relevanceScore}, Stage ${selected.stage}. Öffne die Vollprüfung und kontrolliere Originalaussage, Evidence und Freigabe.`;
+    // Ehrlich bleiben: Diese Antwort ist eine Verlegenheitsauskunft, keine
+    // Antwort auf die gestellte Frage. Das muss der Nutzer sehen können.
+    return `Deine Frage konnte ich gerade nicht direkt beantworten — der LLM-Provider lieferte keine gültige Antwort und zu dieser Frage ist keine deterministische Systemantwort hinterlegt. Stelle die Frage gern noch einmal oder konkreter. Was ich sicher aus den Daten sagen kann: Der aktuell wichtigste Fall ist „${selected.claim}“ (Risiko ${selected.riskScore}, Chris-Fit ${selected.relevanceScore}, Stage ${selected.stage}) — öffne dafür die Vollprüfung.`;
   }
 
   return "Ich kann nur vorhandene, serverseitig geladene Daten einordnen. Öffne den Hunter oder importiere einen geprüften Claim über einen geschützten Admin-Pfad.";
