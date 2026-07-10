@@ -228,7 +228,10 @@ test("public reviewer can run intake but cannot mutate shared data", async ({ pa
   await page.goto("/studio");
   const nav = page.getByRole("navigation", { name: "Hauptnavigation" });
 
-  await nav.getByRole("button", { name: "Jäger", exact: true }).click();
+  // /^Jäger/ statt exact: Sobald Kandidaten in der Queue liegen, hängt die
+  // Badge-Zahl im Accessible Name ("Jäger 1") und ein Exact-Match findet den
+  // Button nie — das war der Parallel-Suite-Flake dieses Tests.
+  await nav.getByRole("button", { name: /^Jäger/ }).click();
   const hunter = page.getByRole("region", { name: "Claim-Radar Command Center" });
   await expect(hunter.getByRole("button", { name: "Live-Radar starten" })).toBeEnabled();
   await expect(hunter.getByText("Prüfansicht · Schreibschutz")).toBeVisible();
