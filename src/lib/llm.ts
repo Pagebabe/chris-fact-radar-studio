@@ -170,6 +170,9 @@ export async function callOpusProxy(userPrompt: string, systemPrompt: string = S
     body: JSON.stringify({
       model: opusProxyModel(),
       max_tokens: callOptions.maxTokens ?? 1200,
+      // Niedrige Temperatur: das freie NIM-Modell produziert bei hoher
+      // Sampling-Varianz Meta-Fragmente ("Be strategic ->") und Wortmüll.
+      temperature: 0.2,
       ...(shouldForceJson ? { response_format: { type: "json_object" } } : {}),
       messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
     }),

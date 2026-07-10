@@ -144,6 +144,18 @@ test("Nebenwirkungen question is not misread as memory recall", async ({ request
   expect(body.reply).toMatch(/keine Evidence-Einträge/i);
 });
 
+test("count questions get deterministic totals instead of a deflection", async ({ request }) => {
+  const response = await request.post("/api/chat", {
+    headers: chatHeaders(),
+    data: chatData("Wie viele öffentliche Claims gibt es aktuell und aus welchen Quellentypen stammen sie? Nenne die Aufteilung."),
+  });
+  const body = await response.json();
+  expect(body.source).toBe("system");
+  expect(body.reply).toMatch(/Aktuell sind 1 Claims öffentlich/);
+  expect(body.reply).toMatch(/1 kuratierte Debatten-Rebuttals/);
+  expect(body.reply).not.toMatch(/Nächster sinnvoller Schritt/);
+});
+
 test("plain 'vorher genannt' phrasing still triggers the honest no-memory answer", async ({ request }) => {
   const response = await request.post("/api/chat", {
     headers: chatHeaders(),

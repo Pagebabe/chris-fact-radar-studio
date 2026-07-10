@@ -1,3 +1,4 @@
+import { hasEvaluationReadySpokenWord } from "@/lib/spoken-word";
 import type { ClaimItem } from "@/lib/types";
 
 // Single source of truth for "which claims may be shown/served publicly".
@@ -36,6 +37,10 @@ const TRUST_BLOCK = [
   "eat smarter",
   "maithink",
   "mai think",
+  "nano doku",
+  "3sat",
+  "terra x",
+  "arte",
 ];
 
 function normalizeText(value: string) {
@@ -57,6 +62,12 @@ export function platformOf(claim: ClaimItem) {
   return String(claim.sourceVideo?.platform ?? "");
 }
 
+// Auch für Intake-Kandidaten nutzbar: Eigenmarke und seriöse
+// Wissenschafts-/Institutionsquellen sind keine Review-Ziele.
+export function isBlockedSourceText(text: string) {
+  return hasAny(text, SELF_BLOCK) || hasAny(text, TRUST_BLOCK);
+}
+
 function isDebateClaim(claim: ClaimItem) {
   return claim.id.startsWith("debate-") && platformOf(claim) === "Debatten-Rebuttal";
 }
@@ -74,6 +85,10 @@ function isVerifiedYoutubeClaim(claim: ClaimItem) {
   if (hasAny(text, TRUST_BLOCK)) return false;
   if (!claim.claim || claim.claim.trim().length < 30) return false;
   if (claim.claim.trim() === claim.sourceVideo?.title?.trim()) return false;
+  // Gleiche Messlatte wie der heutige Intake: ohne evaluation-ready Transkript
+  // des gesprochenen Worts (Captions/Whisper/manuell/kuratiert) ist ein
+  // YouTube-Fall nicht öffentlich. Alt-Treffer auf Beschreibungsbasis fallen raus.
+  if (!hasEvaluationReadySpokenWord(claim.sourceVideo)) return false;
   return true;
 }
 

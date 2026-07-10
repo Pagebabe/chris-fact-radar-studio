@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildAppFacts, providerStory } from "@/lib/app-facts";
 import { callOpusProxy, llmConfigured, opusProxyModel } from "@/lib/llm";
-import { isPublicProductionClaim } from "@/lib/public-claims";
+import { isPublicProductionClaim, publicClaimKind } from "@/lib/public-claims";
 import { filterPublicTruths } from "@/lib/public-truths";
 import { rateLimit } from "@/lib/rate-limit";
 import { loadClaims, loadTruths, storeConfigured } from "@/lib/store";
@@ -179,7 +179,15 @@ function evidenceContext(claim: ClaimItem) {
   ].filter(Boolean).join(" | ")).join(" || ")}`;
 }
 
+function claimBreakdown(all: ClaimItem[]) {
+  const counts = { debate: 0, web: 0, youtube: 0, other: 0 };
+  for (const claim of all) counts[publicClaimKind(claim)] += 1;
+  return counts;
+}
+
 function buildContext(body: ChatRequest, truths: TruthRecord[]) {
+  const allClaims = body.context?.claims ?? [];
+  const breakdown = claimBreakdown(allClaims);
   const claims = topClaims(body.context?.claims, body.selectedClaimId);
   const candidates = (body.context?.hunterCandidates ?? [])
     .filter((candidate) => candidate.status !== "rejected")
@@ -191,6 +199,7 @@ function buildContext(body: ChatRequest, truths: TruthRecord[]) {
 
   return [
     `Selected claim id: ${body.selectedClaimId || "none"}`,
+    `Öffentliche Claims gesamt: ${allClaims.length} (Debatten-Rebuttal=${breakdown.debate}, Externe Web-Claims=${breakdown.web}, YouTube mit verifiziertem Transkript=${breakdown.youtube}); unten detailliert nur die Top ${Math.min(5, allClaims.length)}.`,
     `Runtime: Supabase=${health?.supabaseConfigured ? "configured" : "missing"}; LLM=${health?.llmConfigured ? "configured" : "missing"}; Apify=${health?.apifyConfigured ? "configured" : "missing"}`,
     `Chris-Wissen: ${truths.length} öffentliche kuratierte Positionen; Beispielthemen=${truthTopics.join(", ") || "keine"}; vollständiges autonomes RAG=nicht fertig`,
     body.context?.intakeBrief
@@ -256,6 +265,10 @@ function isKnowledgeQuestion(lower: string) {
   return /(chris[- ]?wissen|knowledge base|rag|wissensposition|positionen live)/i.test(lower);
 }
 
+function isCountQuestion(lower: string) {
+  return /(wie ?viele|anzahl|aufteilung|verteilung).{0,80}(claims?|fälle|faelle|treffer|positionen|quellen)/i.test(lower);
+}
+
 function isProductQuestion(lower: string) {
   return /(was ist chris fact radar|was ist das system|live nutzbar|ausbaupfad|proof.of.work|beta.m?v?p)/i.test(lower);
 }
@@ -287,6 +300,12 @@ function systemTruthReply(message: string, body: ChatRequest, truths: TruthRecor
 
   if (isKnowledgeQuestion(lower)) {
     return `Die Chris-Wissen-Ansicht ist live und enthält aktuell ${truths.length} öffentliche kuratierte Positionen mit Quellen. Nicht fertig ist ein vollständig retrieval-grounded, autonomes RAG über sämtliche Chris-Inhalte. Diese beiden Dinge müssen getrennt beschrieben werden.`;
+  }
+
+  if (isCountQuestion(lower)) {
+    const all = body.context?.claims ?? [];
+    const breakdown = claimBreakdown(all);
+    return `Aktuell sind ${all.length} Claims öffentlich: ${breakdown.debate} kuratierte Debatten-Rebuttals, ${breakdown.web} externe Web-Claims und ${breakdown.youtube} YouTube-Fälle mit verifiziertem Transkript. Dazu kommen ${truths.length} öffentliche Chris-Wissenspositionen. Die Debatten-Fälle stammen aus einem kuratierten öffentlichen Debatten-Video; Review-Ziel sind die Aussagen des Debattengegners, nicht Christian Wolf. Im Chat priorisiert sichtbar sind die Top ${Math.min(5, all.length)}.`;
   }
 
   if (isProductQuestion(lower)) {
