@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdminStrict } from "@/lib/admin-auth";
 import { upsertClaims } from "@/lib/store";
 import type { ClaimItem, SourceVideo } from "@/lib/types";
 
@@ -59,7 +59,7 @@ function toClaim(input: ManualSeedInput): ClaimItem {
     url: input.url,
     creator: input.creator,
     title: input.title,
-    description: input.description ?? "Manuell kuratierter echter Fund, weil die YouTube-Search-API temporär 429 geliefert hat.",
+    description: input.description ?? "Manuell kuratierter echter Fund, weil die YouTube-Suche temporär blockiert war.",
     publishedAt: input.publishedAt ?? new Date().toISOString(),
     views: input.views ?? 0,
     likes: input.likes ?? 0,
@@ -93,11 +93,11 @@ function toClaim(input: ManualSeedInput): ClaimItem {
 }
 
 export async function POST(request: Request) {
-  const unauthorized = requireAdmin(request);
+  const unauthorized = requireAdminStrict(request);
   if (unauthorized) return unauthorized;
 
   const url = new URL(request.url);
-  if (url.searchParams.get("confirm") !== "manual-seed-cases") return NextResponse.json({ ok: false, error: "Use confirm=manual-seed-cases." }, { status: 401 });
+  if (url.searchParams.get("confirm") !== "manual-seed-cases") return NextResponse.json({ ok: false, error: "Use confirm=manual-seed-cases." }, { status: 400 });
   const body = await request.json().catch(() => null);
   const items = Array.isArray(body) ? body as ManualSeedInput[] : null;
   if (!items?.length) return NextResponse.json({ ok: false, error: "POST an array of manual seed cases." }, { status: 400 });
@@ -113,5 +113,5 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  return NextResponse.json({ ok: true, endpoint: "manual-seed-cases", method: "POST", confirm: "manual-seed-cases", auth: "Set APP_ADMIN_TOKEN to require Bearer/x-admin-token for POST writes.", required: ["url", "creator", "title", "claim"], optional: ["verdict", "category", "views", "likes", "comments", "publishedAt", "thumbnail", "description"] });
+  return NextResponse.json({ ok: true, endpoint: "manual-seed-cases", method: "POST", confirm: "manual-seed-cases", auth: "APP_ADMIN_TOKEN is mandatory for POST writes.", required: ["url", "creator", "title", "claim"], optional: ["verdict", "category", "views", "likes", "comments", "publishedAt", "thumbnail", "description"] });
 }
