@@ -22,7 +22,7 @@ async function walk(entry) {
   return files;
 }
 
-const mutatingMethod = /export\s+async\s+function\s+(POST|PUT|PATCH|DELETE)\b/g;
+const routeMethod = /export\s+async\s+function\s+(GET|POST|PUT|PATCH|DELETE)\b/g;
 const persistenceSignals = [
   /\bupsert[A-Z]\w*\s*\(/,
   /\bpromoteHunterCandidate\s*\(/,
@@ -32,7 +32,12 @@ const persistenceSignals = [
   /\bdelete[A-Z]\w*\s*\(/,
   /\bupdate[A-Z]\w*\s*\(/,
 ];
-const authSignals = [/requireAdminStrict\s*\(/, /requireAdmin\s*\(/, /isValidAdminToken\s*\(/, /CRON_SECRET/, /cronUnauthorized/];
+const strictAuthSignals = [
+  /requireAdminStrict\s*\(/,
+  /isValidAdminToken\s*\(/,
+  /CRON_SECRET/,
+  /cronUnauthorized/,
+];
 
 async function auditRoutes() {
   const apiRoot = path.join(ROOT, "src", "app", "api");
@@ -40,17 +45,26 @@ async function auditRoutes() {
 
   for (const file of routes) {
     const content = await readFile(file, "utf8");
-    const methods = [...content.matchAll(mutatingMethod)].map((match) => match[1]);
+    const methods = [...content.matchAll(routeMethod)].map((match) => match[1]);
     if (methods.length === 0) continue;
 
     const persists = persistenceSignals.some((pattern) => pattern.test(content));
-    const guarded = authSignals.some((pattern) => pattern.test(content));
+    const strictGuarded = strictAuthSignals.some((pattern) => pattern.test(content));
+    const failOpenGuard = /requireAdmin\s*\(/.test(content);
     const relative = path.relative(ROOT, file);
 
-    if (persists && !guarded) {
-      add("FAIL", "Persistierender Schreibpfad geschützt", `${relative} exportiert ${methods.join(", ")} ohne erkannten Auth-Guard`, relative);
-    } else if (persists && guarded) {
-      add("PASS", "Persistierender Schreibpfad geschützt", `${relative} · ${methods.join(", ")}`, relative);
+    if (persists && methods.includes("GET")) {
+      add("FAIL", "GET bleibt frei von Seiteneffekten", `${relative} persistiert Daten über GET`, relative);
+    }
+
+    if (persists && failOpenGuard) {
+      add("FAIL", "Persistierende Route nutzt keinen fail-open Guard", `${relative} verwendet requireAdmin statt requireAdminStrict`, relative);
+    }
+
+    if (persists && !strictGuarded) {
+      add("FAIL", "Persistierender Schreibpfad streng geschützt", `${relative} exportiert ${methods.join(", ")} ohne erkannten strikten Auth-Guard`, relative);
+    } else if (persists && strictGuarded && !methods.includes("GET") && !failOpenGuard) {
+      add("PASS", "Persistierender Schreibpfad streng geschützt", `${relative} · ${methods.join(", ")}`, relative);
     }
 
     if (relative.endsWith("src/app/api/hunter/run/route.ts") && !/rateLimit\s*\(/.test(content)) {
