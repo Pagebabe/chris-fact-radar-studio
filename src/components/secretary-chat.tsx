@@ -3,7 +3,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useRef, useState } from "react";
 import type { ClaimItem } from "@/lib/types";
-import { youtubeEmbedUrl } from "@/lib/youtube";
+import { parseYoutubeVideoUrl, youtubeEmbedUrl } from "@/lib/youtube";
 
 export type ChatActionType = "openClaim" | "runIntake" | "createBrief" | "openCases" | "openKartei";
 export type ChatAction = { type: ChatActionType; label: string; claimId?: string };
@@ -103,10 +103,12 @@ export function SecretaryChat({
     const result: ClaimItem[] = [];
     for (const id of citedClaimIds) {
       const item = items.find((entry) => entry.id === id);
-      const embed = item?.sourceVideo?.url ? youtubeEmbedUrl(item.sourceVideo.url) : null;
-      // Pro Video nur ein Chip: mehrere Claims teilen sich oft dasselbe Quellvideo.
-      if (!item || !item.sourceVideo?.thumbnail || !embed || seen.has(embed)) continue;
-      seen.add(embed);
+      if (!item?.sourceVideo?.thumbnail || !youtubeEmbedUrl(item.sourceVideo.url)) continue;
+      // Pro Video nur ein Chip: mehrere Claims teilen sich oft dasselbe Quellvideo
+      // (nur an anderen Timestamps). Dedupe über die Video-ID, nicht die URL.
+      const videoId = parseYoutubeVideoUrl(item.sourceVideo.url)?.id ?? item.sourceVideo.url;
+      if (seen.has(videoId)) continue;
+      seen.add(videoId);
       result.push(item);
     }
     return result;
