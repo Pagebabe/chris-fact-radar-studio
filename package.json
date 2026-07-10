@@ -7,8 +7,13 @@
     "build": "next build",
     "start": "next start -p 3217",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "test:e2e:auth": "CI=true APP_ADMIN_TOKEN=test-token playwright test tests/studio-auth.spec.ts"
+    "test:e2e:auth": "CI=true APP_ADMIN_TOKEN=test-token playwright test tests/studio-auth.spec.ts",
+    "test:production-smoke": "npm run audit:production",
+    "audit:source": "node scripts/audit-source-tree.mjs",
+    "audit:production": "node scripts/audit-production-data.mjs",
+    "audit:submission": "node scripts/audit-submission.mjs"
   },
   "dependencies": {
     "apify-client": "^2.23.4",
