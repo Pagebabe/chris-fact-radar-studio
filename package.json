@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start -p 3217",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "audit:interactions": "node scripts/audit-interactions.mjs",
     "test:e2e": "playwright test",
     "test:e2e:auth": "CI=true APP_ADMIN_TOKEN=test-token playwright test tests/studio-auth.spec.ts"
   },
