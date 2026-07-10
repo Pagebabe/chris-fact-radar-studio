@@ -21,30 +21,30 @@ function targetReason(claim: ClaimItem) {
   const source = claim.analysisSource === "llm" ? "LLM-Auswertung" : "Heuristik/kuratierter Fall";
   const reach = compact(claim.sourceVideo?.views ?? 0);
   const evidenceCount = claim.evidence?.length ?? 0;
-  return `${source} · Chris-Fit ${claim.relevanceScore} · Risk ${claim.riskScore} · ${reach} Views · ${evidenceCount} Evidence-Hinweise`;
+  return `${source} · Chris-Fit ${claim.relevanceScore} · Risiko ${claim.riskScore} · ${reach} Views · ${evidenceCount} Beleg-Hinweise`;
 }
 
 function actionHint(claim: ClaimItem) {
   if (claim.stage === "ready") return "direkt als Rebuttal-Kandidat prüfen";
-  if (claim.stage === "needs_evidence") return "erst Evidence/Originalaussage härten";
-  if (claim.stage === "accepted") return "Content-Pack oder Recording daraus bauen";
+  if (claim.stage === "needs_evidence") return "erst Belege und Originalaussage härten";
+  if (claim.stage === "accepted") return "Content-Paket oder Aufnahme daraus bauen";
   return "im Studio priorisieren und entscheiden";
 }
 
 const actions = [
   {
-    title: "1 · E-Book öffnen (Task 1)",
+    title: "1 · E-Book öffnen",
     text: "Das fertige Anti-Heißhunger-PDF direkt ansehen.",
     href: "/anti-heisshunger-system.pdf",
   },
   {
     title: "2 · Studio: geprüfte Cases",
-    text: "Echte Fälle, Scores, Evidence und Review-Status ansehen.",
+    text: "Echte Fälle, Scores, Belege und Review-Status ansehen.",
     href: "/studio",
   },
   {
-    title: "3 · Intake / Jäger starten",
-    text: "Apify-Intake auslösen und verifizierte Funde in der Queue sehen.",
+    title: "3 · Intake / Jäger im Studio",
+    text: "Studio öffnen und links den Jäger wählen. Dort lässt sich der öffentliche Live-Radar starten.",
     href: "/studio",
   },
   {
@@ -56,7 +56,7 @@ const actions = [
 
 const promptChips = [
   "Warum ist dieser Treffer relevant?",
-  "Welche Evidence fehlt noch?",
+  "Welche Belege fehlen noch?",
   "Was soll Chris dazu sagen?",
   "Welcher Content entsteht daraus?",
   "Was ist die nächste sichere Aktion?",
@@ -65,10 +65,10 @@ const promptChips = [
 const llmHelp = [
   "Treffer erklären",
   "Originalaussage absichern",
-  "Evidence-Lücken markieren",
+  "Beleg-Lücken markieren",
   "60-Sekunden-Skript bauen",
   "Hook/Thumbnail vorschlagen",
-  "Reject-Grund formulieren",
+  "Ausschlussgrund formulieren",
 ];
 
 export default async function Home() {
@@ -94,10 +94,10 @@ export default async function Home() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs font-black">
-            <span className="rounded-full bg-emerald-300 px-3 py-2 text-emerald-950">{claims.length} Cases</span>
+            <span className="rounded-full bg-emerald-300 px-3 py-2 text-emerald-950">{claims.length} Fälle</span>
             <span className="rounded-full bg-cyan-300 px-3 py-2 text-cyan-950">{sourceCount} Quellen</span>
-            <span className="rounded-full bg-violet-300 px-3 py-2 text-violet-950">LLM {llmConfigured() ? "configured" : "fallback"}</span>
-            <span className="rounded-full bg-amber-200 px-3 py-2 text-amber-950">Human Review</span>
+            <span className="rounded-full bg-violet-300 px-3 py-2 text-violet-950">LLM {llmConfigured() ? "aktiv" : "Fallback"}</span>
+            <span className="rounded-full bg-amber-200 px-3 py-2 text-amber-950">Menschliche Freigabe</span>
           </div>
         </header>
 
@@ -106,11 +106,11 @@ export default async function Home() {
             <div className="border-b border-white/10 p-5">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-sm font-black uppercase tracking-[0.22em] text-cyan-300">Abgabe-Cockpit</p>
+                  <p className="text-sm font-black uppercase tracking-[0.22em] text-cyan-300">Produkt-Cockpit</p>
                   <h2 className="mt-1 text-2xl font-black">Was ist echt geprüft, was ist nur Intake?</h2>
                 </div>
                 <span className="w-fit rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-xs font-black text-cyan-100">
-                  Workflow: Intake → Review → Content-Pack
+                  Workflow: Intake → Review → Content-Paket
                 </span>
               </div>
             </div>
@@ -119,22 +119,22 @@ export default async function Home() {
               <div className="max-w-[88%] rounded-[1.5rem] bg-cyan-300 p-4 text-slate-950">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-900">Systemstatus</p>
                 <p className="mt-2 font-bold leading-7">
-                  Echte Claims entstehen nur aus geprüfter Aussagebasis. Apify/manual Intake sammelt Material; das Studio zeigt, was reviewfähig ist und was noch Belegarbeit braucht.
+                  Echte Claims entstehen nur aus geprüfter Aussagebasis. Apify/manueller Intake sammelt Material; das Studio zeigt, was reviewfähig ist und was noch Belegarbeit braucht.
                 </p>
               </div>
 
               <div className="ml-auto max-w-[84%] rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4 text-slate-100">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Abnahmefrage</p>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Prüffrage</p>
                 <p className="mt-2 font-semibold leading-7">Was ist live, was ist geprüft, und was ist der nächste Ausbauschritt?</p>
               </div>
 
               <div className="max-w-[92%] rounded-[1.5rem] bg-slate-900 p-4 text-slate-100">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Claim Radar Briefing</p>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Claim-Radar-Briefing</p>
                 <div className="mt-3 grid gap-3 text-sm leading-6 text-slate-300 md:grid-cols-2">
                   <p>• {claims.length} sichtbare Review-Cases aus der API.</p>
                   <p>• {sourceCount} Quellen, {debateCount} Debattenfälle, {webCount} Web-Claims.</p>
                   <p>• Geschätzte Gesamtreichweite: {compact(reach)}.</p>
-                  <p>• LLM-Workflows: Chat, Monitoring-Fragen, Priorisierung, Rebuttal-Skript, Content-Pack.</p>
+                  <p>• LLM-Workflows: Chat, Monitoring-Fragen, Priorisierung, Rebuttal-Skript, Content-Paket.</p>
                 </div>
                 {topClaim ? (
                   <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-slate-950 p-4">
@@ -152,7 +152,7 @@ export default async function Home() {
                   </div>
                 ) : (
                   <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/10 p-4 text-amber-100">
-                    Keine echten Review-Cases aus der API geladen. Erst Apify/manual Intake oder Supabase prüfen.
+                    Keine echten Review-Cases aus der API geladen. Erst Apify/manuellen Intake oder Supabase prüfen.
                   </div>
                 )}
               </div>
@@ -161,13 +161,13 @@ export default async function Home() {
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-200">Grenze</p>
                 <p className="mt-2 leading-7">
                   Der Chat darf nur mit sichtbarem Kontext arbeiten. Wenn LLM-Provider oder Daten fehlen, muss der Fallback das klar markieren:
-                  Intake, Priorisierung, Evidence, menschliche Freigabe und Content-Ausgabe bleiben die Wahrheitsschicht.
+                  Intake, Priorisierung, Belege, menschliche Freigabe und Content-Ausgabe bleiben die Wahrheitsschicht.
                 </p>
               </div>
             </div>
 
             <div className="border-t border-white/10 p-5">
-              <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Prüffragen für die Abgabe</p>
+              <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Prüffragen</p>
               <div className="flex flex-wrap gap-2">
                 {promptChips.map((chip) => (
                   <span key={chip} className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-bold text-slate-300">
@@ -176,14 +176,14 @@ export default async function Home() {
                 ))}
               </div>
               <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-slate-400">
-                Jede öffentliche Aussage muss zur App passen: Apify/manual Intake statt Plattform-API-Crawler, LLM-Unterstützung statt autonomer Agent, echte Smokes statt künstlicher Daten.
+                Jede öffentliche Aussage muss zur App passen: Apify/manueller Intake statt Plattform-API-Crawler, LLM-Unterstützung statt autonomer Agent, echte Smokes statt künstlicher Daten.
               </div>
             </div>
           </div>
 
           <aside className="space-y-4">
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-cyan-300">Für den Prüfer — 4 Schritte</p>
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-cyan-300">Schnelleinstieg — 4 Schritte</p>
               <div className="mt-4 grid gap-3">
                 {actions.map((action) => (
                   <Link key={action.title} href={action.href} className="rounded-2xl border border-white/10 bg-slate-950 p-4 hover:border-cyan-300 hover:bg-cyan-300 hover:text-slate-950">
@@ -198,21 +198,21 @@ export default async function Home() {
               <p className="text-sm font-black uppercase tracking-[0.22em] text-cyan-300">Datenstruktur</p>
               <div className="mt-4 grid gap-2 text-sm text-slate-300">
                 <p className="rounded-2xl bg-slate-950 p-3">Claims + Creator + Themen</p>
-                <p className="rounded-2xl bg-slate-950 p-3">Treffergrund + Reject-Grund + Priorität</p>
-                <p className="rounded-2xl bg-slate-950 p-3">Evidence + Chris-Fit + Review</p>
+                <p className="rounded-2xl bg-slate-950 p-3">Treffergrund + Ausschlussgrund + Priorität</p>
+                <p className="rounded-2xl bg-slate-950 p-3">Belege + Chris-Fit + Freigabe</p>
                 <p className="rounded-2xl bg-slate-950 p-3">Rebuttals + Kampagnen + Lead-Magnets</p>
               </div>
             </div>
 
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-cyan-300">Top Kandidaten</p>
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-cyan-300">Top-Kandidaten</p>
               <div className="mt-4 grid gap-3">
                 {topClaims.map((claim) => (
                   <article key={claim.id} className="rounded-2xl border border-white/10 bg-slate-950 p-4">
                     <div className="flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-wide">
                       <span className="rounded-full bg-cyan-300 px-2 py-1 text-slate-950">{badgeFor(claim)}</span>
-                      <span className="rounded-full bg-slate-800 px-2 py-1 text-slate-200">Risk {claim.riskScore}</span>
-                      <span className="rounded-full bg-slate-800 px-2 py-1 text-slate-200">Fit {claim.relevanceScore}</span>
+                      <span className="rounded-full bg-slate-800 px-2 py-1 text-slate-200">Risiko {claim.riskScore}</span>
+                      <span className="rounded-full bg-slate-800 px-2 py-1 text-slate-200">Chris-Fit {claim.relevanceScore}</span>
                     </div>
                     <h3 className="mt-3 line-clamp-2 font-black leading-snug">{claim.claim}</h3>
                     <p className="mt-2 text-xs font-semibold text-cyan-200">{claim.sourceVideo.creator}</p>
@@ -228,13 +228,13 @@ export default async function Home() {
             </div>
 
             <div className="rounded-[2rem] border border-violet-300/20 bg-violet-300/10 p-5 text-violet-50">
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-200">LLM Review Layer</p>
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-violet-200">LLM-Prüfschicht</p>
               <p className="mt-3 text-sm leading-6 text-violet-50/80">
                 Die LLM-Schicht ist eine unterstützende Bewertungs- und Textschicht. Die App muss auch ohne Provider sauber bleiben und darf keine nicht geprüften Aussagen als Ergebnis verkaufen.
               </p>
               <ul className="mt-4 space-y-2 text-[12px] font-bold leading-5">
-                <li className="rounded-xl bg-violet-200/90 px-3 py-2 text-violet-950">Aktiv: Provider-Konfiguration, Script-/Pack-API und Fallback-Verhalten.</li>
-                <li className="rounded-xl border border-violet-200/30 px-3 py-2 text-violet-100/90">Prüfer können die konfigurierte Provider-Schicht und Fallbacks prüfen.</li>
+                <li className="rounded-xl bg-violet-200/90 px-3 py-2 text-violet-950">Aktiv: Provider-Konfiguration, Skript-/Paket-API und Fallback-Verhalten.</li>
+                <li className="rounded-xl border border-violet-200/30 px-3 py-2 text-violet-100/90">Die konfigurierte Provider-Schicht und ihre Fallbacks sind prüfbar.</li>
                 <li className="rounded-xl border border-violet-200/30 px-3 py-2 text-violet-100/90">Nicht behaupten: autonomer Daueragent oder finale Wahrheitsmaschine.</li>
               </ul>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -245,7 +245,7 @@ export default async function Home() {
             </div>
 
             <div className="rounded-[2rem] border border-rose-300/20 bg-rose-300/10 p-5 text-rose-50">
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-rose-200">Lead-Magnet Output</p>
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-rose-200">Lead-Magnet</p>
               <h2 className="mt-2 text-xl font-black">Anti-Heißhunger-System</h2>
               <p className="mt-3 text-sm leading-6 text-rose-50/80">
                 Erstes sichtbares Asset aus dem System: aus Chris-Content wird ein Freebie mit Check-Funnel.
