@@ -33,11 +33,64 @@ const persistenceSignals = [
   /\bdelete[A-Z]\w*\s*\(/,
   /\bupdate[A-Z]\w*\s*\(/,
 ];
-const strictAuthSignals = [
-  /requireAdminStrict\s*\(/,
-  /isValidAdminToken\s*\(/,
-  /requireCronStrict\s*\(/,
-];
+const strictAdminSignals = [/requireAdminStrict\s*\(/, /isValidAdminToken\s*\(/];
+
+function handlerBody(content, startIndex) {
+  const open = content.indexOf("{", startIndex);
+  if (open < 0) return "";
+  let depth = 0;
+  let quote = "";
+  let escaped = false;
+  let lineComment = false;
+  let blockComment = false;
+
+  for (let index = open; index < content.length; index += 1) {
+    const char = content[index];
+    const next = content[index + 1] ?? "";
+
+    if (lineComment) {
+      if (char === "\n") lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (char === "*" && next === "/") {
+        blockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === quote) {
+        quote = "";
+      }
+      continue;
+    }
+    if (char === "/" && next === "/") {
+      lineComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === "/" && next === "*") {
+      blockComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === "\"" || char === "'" || char === "`") {
+      quote = char;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return content.slice(open, index + 1);
+    }
+  }
+  return content.slice(open);
+}
 
 async function auditRoutes() {
   const apiRoot = path.join(ROOT, "src", "app", "api");
@@ -45,35 +98,47 @@ async function auditRoutes() {
 
   for (const file of routes) {
     const content = await readFile(file, "utf8");
-    const methods = [...content.matchAll(routeMethod)].map((match) => match[1]);
-    if (methods.length === 0) continue;
-
-    const persists = persistenceSignals.some((pattern) => pattern.test(content));
-    const strictGuarded = strictAuthSignals.some((pattern) => pattern.test(content));
-    const failOpenGuard = /requireAdmin\s*\(/.test(content);
     const relative = path.relative(ROOT, file);
     const cronRoute = relative.includes(`${path.sep}api${path.sep}cron${path.sep}`);
+    const publicHunterRun = relative.endsWith(`src${path.sep}app${path.sep}api${path.sep}hunter${path.sep}run${path.sep}route.ts`);
+    const matches = [...content.matchAll(routeMethod)];
 
-    if (persists && methods.includes("GET") && !cronRoute) {
-      add("FAIL", "GET bleibt frei von Seiteneffekten", `${relative} persistiert Daten über GET`, relative);
-    }
+    for (const match of matches) {
+      const method = match[1];
+      const body = handlerBody(content, match.index ?? 0);
+      const persists = persistenceSignals.some((pattern) => pattern.test(body));
+      if (!persists) continue;
 
-    if (persists && failOpenGuard) {
-      add("FAIL", "Persistierende Route nutzt keinen fail-open Guard", `${relative} verwendet requireAdmin statt requireAdminStrict`, relative);
-    }
+      const strictAdmin = strictAdminSignals.some((pattern) => pattern.test(body));
+      const strictCron = /requireCronStrict\s*\(/.test(body);
+      const failOpenGuard = /requireAdmin\s*\(/.test(body);
 
-    if (cronRoute && persists && !/requireCronStrict\s*\(/.test(content)) {
-      add("FAIL", "Cron-Route fail-closed", `${relative} verwendet keinen requireCronStrict-Guard`, relative);
-    }
+      if (cronRoute) {
+        if (method !== "GET") add("WARN", "Cron-Methode", `${relative} nutzt ${method} statt GET`, relative);
+        if (!strictCron) add("FAIL", "Cron-Route fail-closed", `${relative} ${method} ohne requireCronStrict`, relative);
+        else add("PASS", "Cron-Route fail-closed", `${relative} · ${method}`, relative);
+        continue;
+      }
 
-    if (persists && !strictGuarded) {
-      add("FAIL", "Persistierender Schreibpfad streng geschützt", `${relative} exportiert ${methods.join(", ")} ohne erkannten strikten Auth-Guard`, relative);
-    } else if (persists && strictGuarded && !failOpenGuard) {
-      add("PASS", cronRoute ? "Cron-Route fail-closed" : "Persistierender Schreibpfad streng geschützt", `${relative} · ${methods.join(", ")}`, relative);
-    }
+      if (publicHunterRun && method === "POST") {
+        const rateLimited = /rateLimit\s*\(/.test(body);
+        const budgetCapped = /HUNTER_DAILY_BUDGET_EUR/.test(content);
+        if (rateLimited && budgetCapped) add("PASS", "Öffentlicher Kostenpfad begrenzt", `${relative} · Rate-Limit + Budget-Cap`, relative);
+        else add("FAIL", "Öffentlicher Kostenpfad begrenzt", `${relative} benötigt Rate-Limit und Budget-Cap`, relative);
+        continue;
+      }
 
-    if (relative.endsWith("src/app/api/hunter/run/route.ts") && !/rateLimit\s*\(/.test(content)) {
-      add("FAIL", "Öffentlicher Kostenpfad rate-limitiert", `${relative} hat keinen Rate-Limit-Aufruf`, relative);
+      if (method === "GET") {
+        add("FAIL", "GET bleibt frei von Seiteneffekten", `${relative} persistiert Daten über GET`, relative);
+      }
+      if (failOpenGuard) {
+        add("FAIL", "Persistierende Route nutzt keinen fail-open Guard", `${relative} ${method} verwendet requireAdmin statt requireAdminStrict`, relative);
+      }
+      if (!strictAdmin) {
+        add("FAIL", "Persistierender Schreibpfad streng geschützt", `${relative} ${method} ohne erkannten strikten Auth-Guard`, relative);
+      } else if (method !== "GET" && !failOpenGuard) {
+        add("PASS", "Persistierender Schreibpfad streng geschützt", `${relative} · ${method}`, relative);
+      }
     }
   }
 }
