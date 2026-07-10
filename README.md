@@ -20,7 +20,7 @@ Built as a proof-of-work application: a working MVP, honest about what is live a
 - **Creator dossiers & position matching** — map a claim against a creator's known positions.
 - **Lead-magnet funnel** — an anti-craving ("Anti-Heißhunger") landing page and interactive qualification check.
 
-The live app currently carries **20 reviewed cases across 13 sources**.
+Current public case and source counts are loaded from the live claims API and rendered dynamically. They are deliberately not duplicated as fixed README numbers.
 
 ## Market-intelligence layer (concept)
 
@@ -33,7 +33,7 @@ The fact-checking crawl produces a structured market signal as a byproduct. Two 
 
 | Layer | Source of truth |
 |---|---|
-| LLM / QA control | OpenAI-compatible interface, deployed against **NVIDIA-hosted Llama-Nemotron** (deliberate choice for free capacity under resource limits), provider-agnostic — a one-line env swap moves it to Opus/GPT/local. Deterministic rule-based fallback when unavailable. |
+| LLM / QA control | OpenAI-compatible runtime selected through environment variables. The active runtime model is exposed by the safe health endpoint; the UI remains provider-neutral. Deterministic rule-based fallback when unavailable. |
 | Social intake | Apify-backed Hunter flow + manual transcript import |
 | Data store | Supabase (REST) |
 | Framework | Next.js 16 (App Router), React 19, TypeScript, Tailwind 4 |
@@ -66,10 +66,10 @@ npm run dev      # http://localhost:3217
 The app runs with **no** configuration — intake shows honest empty states and analysis uses the rule-based fallback. To enable the full pipeline, create `.env.local` (never commit real keys):
 
 ```bash
-# LLM / QA control layer (any OpenAI-compatible endpoint; default deploy = NVIDIA NIM)
-OPENAI_BASE_URL=https://integrate.api.nvidia.com
+# LLM / QA control layer (any OpenAI-compatible endpoint)
+OPENAI_BASE_URL=https://your-openai-compatible-endpoint.example/v1
 OPENAI_API_KEY=your-api-key
-LLM_MODEL=nvidia/llama-3.3-nemotron-super-49b-v1.5
+LLM_MODEL=your-model-id
 LLM_TIMEOUT_MS=25000
 
 # Social intake (Apify)
@@ -89,16 +89,22 @@ CRON_SECRET=choose-a-strong-cron-secret
 
 ```bash
 npm run lint
+npm run typecheck
 npm run build
 npm run test:e2e         # Playwright smoke
 npm run test:e2e:auth    # studio auth gate
+npm run audit:source     # forbidden source/copy patterns
+npm run audit:production # live API, PDF, claims, truths and copy
+npm run audit:submission # full one-command submission gate
 ```
+
+See [`docs/SUBMISSION_AUDIT.md`](docs/SUBMISSION_AUDIT.md) for the exact gate, report files and environment variables.
 
 ## Honest limits
 
 - This is a live, tested MVP / proof-of-work — **not** a fully hardened SaaS.
 - Studio protection is a token-gated MVP mode; full multi-user auth is future work.
-- Real provider tests depend on the local Opus proxy and available Apify credit.
+- Real provider tests depend on the configured OpenAI-compatible endpoint and available Apify credit.
 - Automatic platform discovery is deliberately disabled; the market-intelligence dashboard is a concept stage.
 
 ## Tech stack
