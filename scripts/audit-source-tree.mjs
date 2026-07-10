@@ -57,6 +57,11 @@ function inspect(file, content) {
     },
     {
       status: "FAIL",
+      name: "Keine feste Laufzeit-Provider-Behauptung",
+      pattern: /(?:aktuell\s+)?NVIDIA-gehostet(?:es|er|e)?\s+Llama-Nemotron/gi,
+    },
+    {
+      status: "FAIL",
       name: "Keine feste README-Fallzahl",
       pattern: /\d+ reviewed cases across \d+ sources/gi,
     },
