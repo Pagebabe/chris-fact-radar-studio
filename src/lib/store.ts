@@ -1,4 +1,5 @@
 import { hasEvaluationReadySpokenWord } from "./spoken-word";
+import { normalizeClaimsSourceUrls } from "./debate-claims";
 import type {
   ClaimItem,
   CreatorRecord,
@@ -47,7 +48,7 @@ export async function loadClaims(): Promise<ClaimItem[] | null> {
     const url = `${process.env.SUPABASE_URL}/rest/v1/claims?select=payload&order=updated_at.desc&limit=200`;
     const res = await fetch(url, { headers: headers(), cache: "no-store" });
     if (!res.ok) return null;
-    return ((await res.json()) as Array<{ payload: ClaimItem }>).map((row) => row.payload);
+    return normalizeClaimsSourceUrls(((await res.json()) as Array<{ payload: ClaimItem }>).map((row) => row.payload));
   } catch { return null; }
 }
 
@@ -61,7 +62,7 @@ function isCuratedPublicType(item: ClaimItem): boolean {
 }
 
 export async function upsertClaims(items: ClaimItem[]): Promise<boolean> {
-  const reviewReadyItems = items.filter(
+  const reviewReadyItems = normalizeClaimsSourceUrls(items).filter(
     (item) => hasEvaluationReadySpokenWord(item.sourceVideo) || isCuratedPublicType(item)
   );
   if (!storeConfigured() || reviewReadyItems.length === 0) return false;

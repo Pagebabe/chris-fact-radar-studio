@@ -32,10 +32,50 @@ const reviewClaim = {
   evidence: [],
 };
 
-async function stubStudioApis(page: import("@playwright/test").Page) {
+const debateClaim = {
+  ...reviewClaim,
+  id: "debate-004",
+  category: "Supplements",
+  claim: "Jan Leyk stellt Sucralose wegen möglicher Veränderungen des Darmmikrobioms als problematisch dar.",
+  sourceVideo: {
+    ...reviewClaim.sourceVideo,
+    id: "yt-zO3ZPZKRkBM",
+    platform: "Debatten-Rebuttal",
+    url: "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=1203s",
+    creator: "{ungeskriptet} by Ben",
+    title: "Streit eskaliert komplett: Christian Wolf vs Jan Leyk",
+    thumbnail: "https://i.ytimg.com/vi/zO3ZPZKRkBM/hqdefault.jpg",
+    transcriptSnippet: "Kuratierte Stelle 00:20:03",
+    transcriptSource: "curated",
+  },
+};
+
+const oldDebateClaim = {
+  ...debateClaim,
+  sourceVideo: {
+    ...debateClaim.sourceVideo,
+    url: "https://www.youtube.com/results?search_query=Streit+eskaliert+komplett+Christian+Wolf+Jan+Leyk+ungeskriptet+by+Ben",
+  },
+};
+
+const webClaim = {
+  ...reviewClaim,
+  id: "external-web-test",
+  sourceVideo: {
+    ...reviewClaim.sourceVideo,
+    id: "web-source-test",
+    platform: "Externer Web-Claim",
+    url: "https://example.com/source",
+    creator: "Example",
+    title: "Normale Webquelle",
+    thumbnail: "",
+  },
+};
+
+async function stubStudioApis(page: import("@playwright/test").Page, claims = [reviewClaim]) {
   await page.route("**/api/claims", (route) => {
     if (route.request().method() === "GET") {
-      return route.fulfill({ json: { configured: true, claims: [reviewClaim] } });
+      return route.fulfill({ json: { configured: true, claims } });
     }
     return route.fulfill({ json: { ok: true } });
   });
@@ -127,10 +167,10 @@ test("public showcase page links to the main modules", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: /Claim Review Studio/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Studio prüfen/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Intake prüfen/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Lead-Magnet zeigen/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Status öffnen/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Studio: 16 geprüfte Cases/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Intake \/ Jäger starten/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /E-Book öffnen/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Status & Ehrlichkeit/ })).toBeVisible();
 });
 
 test("studio cockpit renders without hydration crash", async ({ page }) => {
@@ -343,4 +383,72 @@ test("content pack API rejects invalid payloads", async ({ request }) => {
   const response = await request.post("/api/pack", { data: { item: null } });
   expect(response.status()).toBe(400);
   await expect(response.json()).resolves.toEqual(expect.objectContaining({ error: "Missing or invalid item" }));
+});
+
+test("debate seed API exposes canonical direct YouTube timestamps", async ({ request }) => {
+  const expected: Record<string, string> = {
+    "debate-001": "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=139s",
+    "debate-002": "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=253s",
+    "debate-003": "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=785s",
+    "debate-004": "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=1203s",
+    "debate-005": "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=1307s",
+    "debate-006": "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=1800s",
+    "debate-007": "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=7336s",
+    "debate-008": "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=6092s",
+  };
+
+  const response = await request.get("/api/admin/seed-debate-cases?confirm=seed-debate-cases");
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json();
+
+  for (const claim of body.claims) {
+    const url = claim.sourceVideo.url as string;
+    expect(url).toBe(expected[claim.id as string]);
+    expect(url).toMatch(/^https:\/\/www\.youtube\.com\/watch\?v=zO3ZPZKRkBM/);
+    expect(url).not.toContain("/results");
+    expect(url).not.toContain("search_query");
+  }
+});
+
+test("debate rebuttal YouTube URL embeds independent of platform label", async ({ page }) => {
+  await stubStudioApis(page, [debateClaim]);
+  await page.goto("/studio");
+  await page.getByRole("navigation", { name: "Hauptnavigation" }).getByRole("button", { name: "Vollprüfung", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Aussagen-Posteingang" })).toBeVisible();
+
+  await page.getByRole("button", { name: /Video starten: Streit eskaliert komplett/ }).first().click();
+  const iframe = page.locator("iframe").first();
+  await expect(iframe).toBeVisible();
+  await expect(iframe).toHaveAttribute("src", /\/embed\/zO3ZPZKRkBM/);
+  await expect(iframe).toHaveAttribute("src", /start=1203/);
+  await expect(iframe).toHaveAttribute("src", /autoplay=1/);
+
+  await expect(page.getByRole("link", { name: /Quelle öffnen/ })).toHaveAttribute("href", "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=1203s");
+  await expect(page.locator("body")).not.toContainText("youtube.com/results");
+});
+
+test("non-embeddable web source opens as a real source link", async ({ page }) => {
+  await stubStudioApis(page, [webClaim]);
+  await page.goto("/studio");
+  await page.getByRole("navigation", { name: "Hauptnavigation" }).getByRole("button", { name: "Vollprüfung", exact: true }).click();
+
+  await expect(page.getByRole("button", { name: /Quelle ansehen/ })).toBeEnabled();
+  await expect(page.getByRole("link", { name: /Quelle öffnen/ })).toHaveAttribute("href", "https://example.com/source");
+});
+
+test("old localStorage YouTube search URL cannot override server debate URL", async ({ page }) => {
+  await stubStudioApis(page, [debateClaim]);
+  await page.addInitScript((claim) => {
+    window.localStorage.setItem("chris-fact-radar.items.v1", JSON.stringify([claim]));
+  }, oldDebateClaim);
+
+  await page.goto("/studio");
+  await page.getByRole("navigation", { name: "Hauptnavigation" }).getByRole("button", { name: "Vollprüfung", exact: true }).click();
+  await expect(page.locator("body")).not.toContainText("youtube.com/results");
+
+  await page.getByRole("button", { name: /Video starten: Streit eskaliert komplett/ }).first().click();
+  const iframe = page.locator("iframe").first();
+  await expect(iframe).toBeVisible();
+  await expect(iframe).toHaveAttribute("src", /\/embed\/zO3ZPZKRkBM/);
+  await expect(iframe).toHaveAttribute("src", /start=1203/);
 });

@@ -1,4 +1,4 @@
-import type { ClaimItem, CreatorRecord } from "./types";
+import type { ClaimItem, CreatorRecord, SourcePlatform } from "./types";
 
 export function buildCreatorDossiers(items: ClaimItem[], existing: CreatorRecord[] = []): CreatorRecord[] {
   const map = new Map<string, CreatorRecord>(existing.map((c) => [c.id, { ...c }]));
@@ -26,7 +26,7 @@ export function buildCreatorDossiers(items: ClaimItem[], existing: CreatorRecord
       map.set(id, {
         id,
         name: v.creator,
-        platform: v.platform,
+        platform: creatorPlatform(v.platform),
         channelId: v.channelId,
         channelUrl: v.platform === "YouTube" && v.channelId ? `https://www.youtube.com/channel/${v.channelId}` : v.url,
         handle: v.creator.startsWith("@") ? v.creator : undefined,
@@ -44,6 +44,11 @@ export function buildCreatorDossiers(items: ClaimItem[], existing: CreatorRecord
   }
 
   return [...map.values()].sort((a, b) => creatorSeverity(b) - creatorSeverity(a));
+}
+
+function creatorPlatform(platform: SourcePlatform): CreatorRecord["platform"] {
+  if (platform === "TikTok" || platform === "Instagram") return platform;
+  return "YouTube";
 }
 
 export function creatorAvatar(name: string): string {

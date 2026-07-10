@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminStrict } from "@/lib/admin-auth";
 import { isPublicClaim, isWritableClaim } from "@/lib/public-claims";
 import { loadClaims, storeConfigured, upsertClaims } from "@/lib/store";
+import { normalizeClaimsSourceUrls } from "@/lib/debate-claims";
 import type { ClaimItem } from "@/lib/types";
 
 export async function GET() {
@@ -9,7 +10,7 @@ export async function GET() {
     return NextResponse.json({ configured: false, claims: [] });
   }
   const claims = await loadClaims();
-  const publicClaims = (claims ?? []).filter(isPublicClaim);
+  const publicClaims = normalizeClaimsSourceUrls(claims ?? []).filter(isPublicClaim);
   return NextResponse.json({ configured: claims !== null, claims: publicClaims });
 }
 
@@ -25,7 +26,7 @@ export async function PUT(request: Request) {
   if (!Array.isArray(body.claims)) {
     return NextResponse.json({ error: "Missing claims" }, { status: 400 });
   }
-  const cleanClaims = body.claims.filter(isWritableClaim);
+  const cleanClaims = normalizeClaimsSourceUrls(body.claims).filter(isWritableClaim);
   const saved = await upsertClaims(cleanClaims);
   return NextResponse.json({ configured: true, saved, accepted: cleanClaims.length, rejected: body.claims.length - cleanClaims.length });
 }

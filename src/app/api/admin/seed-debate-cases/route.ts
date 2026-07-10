@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
+import { DEBATE_CANONICAL_URLS, DEBATE_VIDEO_ID } from "@/lib/debate-claims";
 import { upsertClaims } from "@/lib/store";
 import type { ClaimItem, SourceVideo } from "@/lib/types";
 
 const baseVideo: SourceVideo = {
-  id: "yt-eZ03ZPZKRkBM",
-  platform: "YouTube",
+  id: `yt-${DEBATE_VIDEO_ID}`,
+  platform: "Debatten-Rebuttal",
   sourceMode: "live",
-  url: "https://www.youtube.com/watch?v=eZ03ZPZKRkBM",
+  url: DEBATE_CANONICAL_URLS["debate-001"],
   creator: "{ungeskriptet} by Ben",
   title: "Streit eskaliert komplett: Christian Wolf vs Jan Leyk",
   description: "Kuratierter Debattenfall aus Nutzertranskript. Nicht als normaler Gegner-Claim behandeln.",
@@ -47,7 +48,7 @@ function makeClaim(seed: typeof seeds[number]): ClaimItem {
     whyItMatters: why,
     responseDraft: "Ruhig bleiben, die Aussage konkretisieren und dann prüfen: Was ist belegt, was ist Meinung, was ist pauschal formuliert?",
     analysisSource: "llm",
-    sourceVideo: { ...baseVideo, transcriptSnippet: `Kuratierte Stelle ${timestamp}` },
+    sourceVideo: { ...baseVideo, url: DEBATE_CANONICAL_URLS[id], transcriptSnippet: `Kuratierte Stelle ${timestamp}` },
     evidence: [],
     responseBlocks: {
       hook: claim,

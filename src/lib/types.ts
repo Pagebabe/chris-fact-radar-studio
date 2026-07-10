@@ -11,8 +11,10 @@ export type Evidence = {
 
 export type ViewSnapshot = { at: string; views: number };
 
+export type SourcePlatform = "YouTube" | "TikTok" | "Instagram" | "Debatten-Rebuttal" | "Externer Web-Claim";
+
 export type SourceVideo = {
-  id: string; platform: "YouTube" | "TikTok" | "Instagram"; sourceMode?: "live" | "curated"; curationReason?: string;
+  id: string; platform: SourcePlatform; sourceMode?: "live" | "curated"; curationReason?: string;
   url: string; creator: string; creatorHandle?: string; creatorAvatarUrl?: string; channelId?: string; title: string; description: string;
   publishedAt: string; views: number; likes: number; comments: number; thumbnail: string; transcriptSnippet: string;
   transcriptSource?: "youtube-captions" | "description" | "curated" | "manual"; viewHistory?: ViewSnapshot[];

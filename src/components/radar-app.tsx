@@ -33,6 +33,8 @@ import { matchClaimToTruths } from "@/lib/truth";
 import { matchScienceToClaim } from "@/lib/science-match";
 import { buildFallbackPack, buildPackMarkdown } from "@/lib/pack";
 import { loadSettings } from "@/lib/settings";
+import { normalizeClaimsSourceUrls } from "@/lib/debate-claims";
+import { isYoutubeSearchUrl, youtubeEmbedUrl, youtubeWatchUrl } from "@/lib/youtube";
 import { Teleprompter } from "./teleprompter";
 import { ContentPackModal } from "./content-pack";
 import { Kartei } from "./kartei";
@@ -107,7 +109,7 @@ export function RadarApp() {
         if (cancelled || !data.configured) return;
         setServerStore(true);
         if (data.claims.length > 0) {
-          setItems((current) => mergeClaims(current, data.claims));
+          setItems((current) => mergeClaims(data.claims, current));
           setSelectedId((current) => current || data.claims[0]?.id || "");
           setStatus("Geteilte Queue aus dem Team-Speicher geladen.");
         } else {
@@ -122,7 +124,7 @@ export function RadarApp() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeClaimsSourceUrls(items)));
     } catch {}
     if (serverStore) {
       fetch("/api/claims", {
@@ -656,8 +658,8 @@ export function RadarApp() {
               <div className="empty-state">Keine Aussagen passen zu diesem Filter.</div>
             ) : (
               filteredItems.map((item) => {
-                // Nur YouTube laesst sich einbetten; sonst oeffnet der Thumbnail-Klick die Quelle.
-                const rowEmbedUrl = item.sourceVideo.platform === "YouTube" ? youtubeEmbedUrl(item.sourceVideo.url) : null;
+                const sourceUrl = youtubeWatchUrl(item.sourceVideo.url) ?? item.sourceVideo.url;
+                const rowEmbedUrl = youtubeEmbedUrl(item.sourceVideo.url);
                 const isRowPlaying = playingListId === item.id && Boolean(rowEmbedUrl);
                 return (
                 <article
@@ -679,7 +681,7 @@ export function RadarApp() {
                       <button
                         type="button"
                         className="claim-thumb-frame"
-                        onClick={() => (rowEmbedUrl ? setPlayingListId(item.id) : window.open(item.sourceVideo.url, "_blank", "noreferrer"))}
+                        onClick={() => (rowEmbedUrl ? setPlayingListId(item.id) : window.open(sourceUrl, "_blank", "noreferrer"))}
                         aria-label={rowEmbedUrl ? `Video starten: ${item.sourceVideo.title}` : `Quelle öffnen: ${item.sourceVideo.title}`}
                       >
                         <img className="claim-thumb" src={item.sourceVideo.thumbnail || undefined} alt="" loading="lazy" />
@@ -772,8 +774,8 @@ const NAV_VIEWS: ReadonlyArray<{ view: AppView; label: string; Icon: typeof Gaug
 
 function mergeClaims(preferred: ClaimItem[], fallback: ClaimItem[]): ClaimItem[] {
   const merged = new Map<string, ClaimItem>();
-  for (const item of fallback) merged.set(item.id, item);
-  for (const item of preferred) merged.set(item.id, item);
+  for (const item of normalizeClaimsSourceUrls(fallback)) merged.set(item.id, item);
+  for (const item of normalizeClaimsSourceUrls(preferred)) merged.set(item.id, item);
   return Array.from(merged.values());
 }
 
@@ -790,7 +792,7 @@ function loadStoredItems() {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (!saved) return [];
     const parsed = JSON.parse(saved) as ClaimItem[];
-    return Array.isArray(parsed) && parsed.length > 0 ? preserveViewHistory(parsed) : [];
+    return Array.isArray(parsed) && parsed.length > 0 ? preserveViewHistory(normalizeClaimsSourceUrls(parsed)) : [];
   } catch {
     return [];
   }
@@ -825,27 +827,6 @@ function transcriptLabel(source: ClaimItem["sourceVideo"]["transcriptSource"]) {
   if (source === "curated") return "kuratierter Ausschnitt";
   if (source === "manual") return "manuell geprüfter Text";
   return "Transkript unbekannt";
-}
-
-function youtubeEmbedUrl(url: string) {
-  try {
-    const parsed = new URL(url);
-    const host = parsed.hostname.replace(/^www\./, "");
-    if (host === "youtu.be") {
-      const id = parsed.pathname.split("/").filter(Boolean)[0];
-      return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1` : null;
-    }
-    if (!host.endsWith("youtube.com")) return null;
-    const watchId = parsed.searchParams.get("v");
-    if (watchId) return `https://www.youtube.com/embed/${watchId}?autoplay=1&rel=0&modestbranding=1`;
-    const pathParts = parsed.pathname.split("/").filter(Boolean);
-    if (pathParts[0] === "shorts" && pathParts[1]) {
-      return `https://www.youtube.com/embed/${pathParts[1]}?autoplay=1&rel=0&modestbranding=1`;
-    }
-    return null;
-  } catch {
-    return null;
-  }
 }
 
 function creatorAvatarUrl(name: string) {
@@ -1182,7 +1163,9 @@ function ClaimInspector({
     at: snapshot.at.slice(11, 16),
     views: snapshot.views,
   }));
-  const embedUrl = item.sourceVideo.platform === "YouTube" ? youtubeEmbedUrl(item.sourceVideo.url) : null;
+  const sourceUrl = youtubeWatchUrl(item.sourceVideo.url) ?? item.sourceVideo.url;
+  const invalidSourceUrl = isYoutubeSearchUrl(item.sourceVideo.url);
+  const embedUrl = youtubeEmbedUrl(item.sourceVideo.url);
   const isPlaying = playingId === item.id && Boolean(embedUrl);
   return (
     <aside className="inspector" aria-label="Aussage-Details">
@@ -1199,7 +1182,7 @@ function ClaimInspector({
             ) : (
               <button
                 className="video-hero-button"
-                onClick={() => embedUrl && setPlayingId(item.id)}
+                onClick={() => embedUrl ? setPlayingId(item.id) : window.open(sourceUrl, "_blank", "noreferrer")}
                 aria-label={embedUrl ? `Video starten: ${item.sourceVideo.title}` : `Quelle öffnen: ${item.sourceVideo.title}`}
               >
                 <img src={item.sourceVideo.thumbnail || undefined} alt="" />
@@ -1245,14 +1228,14 @@ function ClaimInspector({
               </div>
             )}
             <div className="source-actions">
-              <button className="button primary" onClick={() => embedUrl ? setPlayingId(item.id) : window.open(item.sourceVideo.url, "_blank", "noreferrer")}>
+              <button className="button primary" disabled={invalidSourceUrl} onClick={() => embedUrl ? setPlayingId(item.id) : window.open(sourceUrl, "_blank", "noreferrer")}>
                 <Play size={16} fill="currentColor" aria-hidden="true" />
-                {embedUrl ? "Video starten" : "Quelle ansehen"}
+                {invalidSourceUrl ? "Quelle ungültig" : embedUrl ? "Video starten" : "Quelle ansehen"}
               </button>
-              <a className="button" href={item.sourceVideo.url} target="_blank" rel="noreferrer">
+              {!invalidSourceUrl && <a className="button" href={sourceUrl} target="_blank" rel="noreferrer">
                 <ArrowUpRight size={16} aria-hidden="true" />
                 Quelle öffnen
-              </a>
+              </a>}
             </div>
           </div>
         </div>
