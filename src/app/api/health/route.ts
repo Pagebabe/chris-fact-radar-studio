@@ -9,7 +9,7 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     app: "chris-fact-radar",
-    status: "mvp-ready",
+    status: "live",
     timestamp: new Date().toISOString(),
     checks: {
       supabaseConfigured: storeConfigured(),
