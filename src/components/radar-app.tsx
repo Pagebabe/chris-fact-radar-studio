@@ -88,6 +88,7 @@ export function RadarApp() {
   );
 
   const [serverStore, setServerStore] = useState(false);
+  const [serverWritable, setServerWritable] = useState(false);
   const [activeView, setActiveView] = useState<AppView>("secretary");
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
   const [showSettings, setShowSettings] = useState(false);
@@ -104,10 +105,11 @@ export function RadarApp() {
   useEffect(() => {
     let cancelled = false;
     fetch("/api/claims")
-      .then((res) => res.json() as Promise<{ configured: boolean; claims: ClaimItem[] }>)
+      .then((res) => res.json() as Promise<{ configured: boolean; claims: ClaimItem[]; writable?: boolean }>)
       .then((data) => {
         if (cancelled || !data.configured) return;
         setServerStore(true);
+        setServerWritable(Boolean(data.writable));
         if (data.claims.length > 0) {
           setItems((current) => mergeClaims(data.claims, current));
           setSelectedId((current) => current || data.claims[0]?.id || "");
@@ -126,14 +128,14 @@ export function RadarApp() {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeClaimsSourceUrls(items)));
     } catch {}
-    if (serverStore) {
+    if (serverStore && serverWritable) {
       fetch("/api/claims", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ claims: items }),
       }).catch(() => {});
     }
-  }, [items, serverStore]);
+  }, [items, serverStore, serverWritable]);
 
   // Load creators and science from server when available
   useEffect(() => {

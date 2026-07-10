@@ -5,13 +5,14 @@ import { loadClaims, storeConfigured, upsertClaims } from "@/lib/store";
 import { normalizeClaimsSourceUrls } from "@/lib/debate-claims";
 import type { ClaimItem } from "@/lib/types";
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!storeConfigured()) {
-    return NextResponse.json({ configured: false, claims: [] });
+    return NextResponse.json({ configured: false, claims: [], writable: false });
   }
   const claims = await loadClaims();
   const publicClaims = normalizeClaimsSourceUrls(claims ?? []).filter(isPublicClaim);
-  return NextResponse.json({ configured: claims !== null, claims: publicClaims });
+  const writable = requireAdminStrict(request) === null;
+  return NextResponse.json({ configured: claims !== null, claims: publicClaims, writable });
 }
 
 export async function PUT(request: Request) {
