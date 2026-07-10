@@ -71,6 +71,8 @@ export function RadarApp() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [selectedId, setSelectedId] = useState("");
+  // Welcher Fall spielt gerade inline in der Vollprüfungs-Liste? (nur einer gleichzeitig)
+  const [playingListId, setPlayingListId] = useState<string | null>(null);
   const [activeMyth, setActiveMyth] = useState<string | null>(null);
   const [teleprompterScript, setTeleprompterScript] = useState<string | null>(null);
   const [isScripting, setIsScripting] = useState(false);
@@ -646,20 +648,44 @@ export function RadarApp() {
             {filteredItems.length === 0 ? (
               <div className="empty-state">Keine Aussagen passen zu diesem Filter.</div>
             ) : (
-              filteredItems.map((item) => (
-                <button
+              filteredItems.map((item) => {
+                // Nur YouTube laesst sich einbetten; sonst oeffnet der Thumbnail-Klick die Quelle.
+                const rowEmbedUrl = item.sourceVideo.platform === "YouTube" ? youtubeEmbedUrl(item.sourceVideo.url) : null;
+                const isRowPlaying = playingListId === item.id && Boolean(rowEmbedUrl);
+                return (
+                <article
                   key={item.id}
                   className={`claim-row verdict-${item.verdict} ${selected?.id === item.id ? "active" : ""}`}
-                  onClick={() => setSelectedId(item.id)}
                 >
                   {item.sourceVideo.thumbnail && (
-                    <span className="claim-thumb-frame" aria-hidden="true">
-                      <img className="claim-thumb" src={item.sourceVideo.thumbnail || undefined} alt="" loading="lazy" />
-                      <span className="claim-thumb-platform">{item.sourceVideo.platform}</span>
-                      <span className="claim-thumb-views">{compactNumber(item.sourceVideo.views)}</span>
-                    </span>
+                    isRowPlaying && rowEmbedUrl ? (
+                      <span className="claim-thumb-frame">
+                        <iframe
+                          className="claim-thumb-embed"
+                          src={rowEmbedUrl}
+                          title={item.sourceVideo.title}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="claim-thumb-frame"
+                        onClick={() => (rowEmbedUrl ? setPlayingListId(item.id) : window.open(item.sourceVideo.url, "_blank", "noreferrer"))}
+                        aria-label={rowEmbedUrl ? `Video starten: ${item.sourceVideo.title}` : `Quelle öffnen: ${item.sourceVideo.title}`}
+                      >
+                        <img className="claim-thumb" src={item.sourceVideo.thumbnail || undefined} alt="" loading="lazy" />
+                        <span className="claim-thumb-platform">{item.sourceVideo.platform}</span>
+                        <span className="claim-thumb-views">{compactNumber(item.sourceVideo.views)}</span>
+                        <span className="claim-thumb-play" aria-hidden="true">
+                          <Play size={12} fill="currentColor" />
+                          {rowEmbedUrl ? "Starten" : "Quelle"}
+                        </span>
+                      </button>
+                    )
                   )}
-                  <div className="claim-row-body">
+                  <button type="button" className="claim-row-body" onClick={() => setSelectedId(item.id)}>
                   <div className="claim-meta">
                     <span>{item.sourceVideo.platform} / {item.sourceVideo.creator}</span>
                     <span>{compactNumber(item.sourceVideo.views)} Views</span>
@@ -689,9 +715,10 @@ export function RadarApp() {
                       <strong>{percent(item.checkworthiness)}</strong>
                     </div>
                   </div>
-                  </div>
-                </button>
-              ))
+                  </button>
+                </article>
+                );
+              })
             )}
           </div>
         </section>
