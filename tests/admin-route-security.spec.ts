@@ -8,3 +8,11 @@ test("debate seeder is POST-only and fail-closed", async ({ request }) => {
   expect(postResponse.status()).toBe(401);
   await expect(postResponse.json()).resolves.toEqual(expect.objectContaining({ ok: false }));
 });
+
+test("cron routes are disabled without CRON_SECRET", async ({ request }) => {
+  for (const route of ["/api/cron/discover", "/api/cron/science"]) {
+    const response = await request.get(route);
+    expect(response.status(), route).toBe(401);
+    await expect(response.json()).resolves.toEqual(expect.objectContaining({ ok: false }));
+  }
+});
