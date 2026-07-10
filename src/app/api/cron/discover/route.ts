@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
+import { requireCronStrict } from "@/lib/cron-auth";
 import { runHunter } from "@/lib/hunter";
 
 export const maxDuration = 300;
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = request.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  }
+  const unauthorized = requireCronStrict(request);
+  if (unauthorized) return unauthorized;
 
   const result = await runHunter();
   return NextResponse.json({
