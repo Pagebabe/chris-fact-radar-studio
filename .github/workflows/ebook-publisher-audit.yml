@@ -1,0 +1,183 @@
+name: E-Book Publisher Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/ebook-publisher-audit.yml"
+
+jobs:
+  audit:
+    name: Render and inspect every ebook page
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install PDF inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils imagemagick python3-pil
+
+      - name: Collect current and historic PDF versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/ebook-audit/versions
+          cp public/anti-heisshunger-system.pdf artifacts/ebook-audit/versions/current-main.pdf
+
+          extract_version() {
+            local ref="$1"
+            local out="$2"
+            if git cat-file -e "$ref:public/anti-heisshunger-system.pdf" 2>/dev/null; then
+              git show "$ref:public/anti-heisshunger-system.pdf" > "artifacts/ebook-audit/versions/$out"
+              echo "FOUND $out from $ref"
+            else
+              echo "MISSING $out from $ref"
+            fi
+          }
+
+          extract_version "28add9f684636ea10fc9342cb4989bbe4133ea79" "compressed-final-28add9f.pdf"
+          extract_version "6cd78d25c8c093ac4ca01accbce3719bb4521fea" "final-before-compression-6cd78d2.pdf"
+          extract_version "6cd78d25c8c093ac4ca01accbce3719bb4521fea^" "pre-final-parent.pdf"
+          extract_version "9ebe3559982f27d0819572ec568058a2618e9306" "preview-era-9ebe355.pdf"
+
+          sha256sum artifacts/ebook-audit/versions/*.pdf | tee artifacts/ebook-audit/version-sha256.txt
+          ls -lh artifacts/ebook-audit/versions | tee artifacts/ebook-audit/version-sizes.txt
+
+      - name: Inventory every relevant repository asset and historical filename
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "# Current repository assets"
+            find public src docs -type f 2>/dev/null | sort | grep -Ei 'ebook|heiss|hunger|food|snack|protein|sweet|image|photo|\.png$|\.jpe?g$|\.webp$|\.pdf$' || true
+            echo
+            echo "# Historical filenames across all refs"
+            git log --all --name-only --pretty=format: | sort -u | grep -Ei 'ebook|heiss|hunger|food|snack|protein|sweet|image|photo|\.png$|\.jpe?g$|\.webp$|\.pdf$' || true
+          } | tee artifacts/ebook-audit/asset-inventory.txt
+
+      - name: Render, extract text and inspect embedded images
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pdf in artifacts/ebook-audit/versions/*.pdf; do
+            name="$(basename "$pdf" .pdf)"
+            out="artifacts/ebook-audit/$name"
+            mkdir -p "$out/pages" "$out/images"
+
+            pdfinfo "$pdf" > "$out/pdfinfo.txt"
+            pdftotext -layout "$pdf" "$out/text.txt"
+            pdfimages -list "$pdf" > "$out/pdfimages-list.txt"
+            pdfimages -all "$pdf" "$out/images/img" || true
+
+            pdftoppm -jpeg -r 160 -jpegopt quality=92,progressive=y,optimize=y "$pdf" "$out/pages/page" >/dev/null 2>&1
+
+            python3 - "$out/pages" "$out/contact-sheet.jpg" <<'PY'
+          import sys
+          from pathlib import Path
+          from PIL import Image, ImageOps, ImageDraw
+
+          page_dir = Path(sys.argv[1])
+          output = Path(sys.argv[2])
+          files = sorted(page_dir.glob('page-*.jpg'))
+          thumbs = []
+          for index, path in enumerate(files, 1):
+              image = Image.open(path).convert('RGB')
+              image.thumbnail((300, 425), Image.Resampling.LANCZOS)
+              card = Image.new('RGB', (320, 470), 'white')
+              x = (card.width - image.width) // 2
+              card.paste(image, (x, 25))
+              draw = ImageDraw.Draw(card)
+              draw.text((12, 445), f'Seite {index:02d}', fill='black')
+              card = ImageOps.expand(card, border=2, fill='#777777')
+              thumbs.append(card)
+
+          cols = 4
+          rows = (len(thumbs) + cols - 1) // cols
+          sheet = Image.new('RGB', (cols * 324, rows * 474), '#222222')
+          for i, thumb in enumerate(thumbs):
+              sheet.paste(thumb, ((i % cols) * 324, (i // cols) * 474))
+          sheet.save(output, quality=92, optimize=True)
+          PY
+          done
+
+      - name: Create technical HQ report for every embedded image
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('artifacts/ebook-audit')
+          report = ['# E-Book Bild-Preflight', '', 'Regel: Jedes Bild wird einzeln technisch und redaktionell abgenommen.', '']
+          blocked = 0
+
+          for listing in sorted(root.glob('*/pdfimages-list.txt')):
+              version = listing.parent.name
+              report += [f'## {version}', '', '| Seite | Nr. | Typ | Pixel | X-PPI | Y-PPI | Urteil |', '|---:|---:|---|---:|---:|---:|---|']
+              rows = 0
+              for line in listing.read_text(errors='replace').splitlines():
+                  if not re.match(r'^\s*\d+\s+\d+\s+', line):
+                      continue
+                  parts = line.split()
+                  if len(parts) < 14:
+                      continue
+                  try:
+                      page, num = int(parts[0]), int(parts[1])
+                      typ = parts[2]
+                      width, height = int(parts[3]), int(parts[4])
+                      xppi, yppi = float(parts[-3]), float(parts[-2])
+                  except Exception:
+                      continue
+                  rows += 1
+                  reasons = []
+                  if width < 1200 or height < 800:
+                      reasons.append('zu wenig Pixel')
+                  if xppi < 150 or yppi < 150:
+                      reasons.append('unter 150 PPI')
+                  if min(xppi, yppi) < 220:
+                      reasons.append('nicht Premium-Print-HQ')
+                  verdict = 'BLOCK' if reasons else 'TECHNISCH OK'
+                  if reasons:
+                      blocked += 1
+                      verdict += ': ' + ', '.join(reasons)
+                  report.append(f'| {page} | {num} | {typ} | {width}x{height} | {xppi:.0f} | {yppi:.0f} | {verdict} |')
+              if rows == 0:
+                  report.append('| - | - | - | - | - | - | Keine separaten Rasterbilder erkannt |')
+              report.append('')
+
+          report += ['## Zusammenfassung', '', f'- Technisch blockierte Bildeinträge: **{blocked}**', '- Ein technisches OK ist noch keine redaktionelle Freigabe.', '- Redaktionelle Freigabe prüft Motiv, Relevanz, Authentizität, Stil, Beschnitt, Wiederholung und Markenwirkung.', '']
+          (root / 'HQ-BILD-PREFLIGHT.md').write_text('\n'.join(report), encoding='utf-8')
+          print('\n'.join(report[-8:]))
+          PY
+
+      - name: Compare version text and page counts
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "# Version comparison"
+            for d in artifacts/ebook-audit/*/; do
+              [ -f "$d/pdfinfo.txt" ] || continue
+              echo
+              echo "## $(basename "$d")"
+              grep -E '^(Pages|Page size|File size|PDF version):' "$d/pdfinfo.txt" || true
+              echo "Text characters: $(wc -m < "$d/text.txt")"
+              echo "Rendered pages: $(find "$d/pages" -name 'page-*.jpg' | wc -l)"
+              echo "Extracted image files: $(find "$d/images" -type f | wc -l)"
+            done
+          } | tee artifacts/ebook-audit/VERSION-COMPARISON.md
+
+      - name: Upload complete publisher audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: ebook-publisher-audit
+          path: artifacts/ebook-audit
+          retention-days: 14
+          if-no-files-found: error
