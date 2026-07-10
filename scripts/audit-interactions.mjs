@@ -28,6 +28,7 @@ const persistenceSignals = [
   /\bpromoteHunterCandidate\s*\(/,
   /\brejectHunterCandidate\s*\(/,
   /\bsetCreatorWatchStatus\s*\(/,
+  /\brunHunter\s*\(/,
   /\bsave[A-Z]\w*\s*\(/,
   /\bdelete[A-Z]\w*\s*\(/,
   /\bupdate[A-Z]\w*\s*\(/,
@@ -35,8 +36,7 @@ const persistenceSignals = [
 const strictAuthSignals = [
   /requireAdminStrict\s*\(/,
   /isValidAdminToken\s*\(/,
-  /CRON_SECRET/,
-  /cronUnauthorized/,
+  /requireCronStrict\s*\(/,
 ];
 
 async function auditRoutes() {
@@ -52,8 +52,9 @@ async function auditRoutes() {
     const strictGuarded = strictAuthSignals.some((pattern) => pattern.test(content));
     const failOpenGuard = /requireAdmin\s*\(/.test(content);
     const relative = path.relative(ROOT, file);
+    const cronRoute = relative.includes(`${path.sep}api${path.sep}cron${path.sep}`);
 
-    if (persists && methods.includes("GET")) {
+    if (persists && methods.includes("GET") && !cronRoute) {
       add("FAIL", "GET bleibt frei von Seiteneffekten", `${relative} persistiert Daten über GET`, relative);
     }
 
@@ -61,10 +62,14 @@ async function auditRoutes() {
       add("FAIL", "Persistierende Route nutzt keinen fail-open Guard", `${relative} verwendet requireAdmin statt requireAdminStrict`, relative);
     }
 
+    if (cronRoute && persists && !/requireCronStrict\s*\(/.test(content)) {
+      add("FAIL", "Cron-Route fail-closed", `${relative} verwendet keinen requireCronStrict-Guard`, relative);
+    }
+
     if (persists && !strictGuarded) {
       add("FAIL", "Persistierender Schreibpfad streng geschützt", `${relative} exportiert ${methods.join(", ")} ohne erkannten strikten Auth-Guard`, relative);
-    } else if (persists && strictGuarded && !methods.includes("GET") && !failOpenGuard) {
-      add("PASS", "Persistierender Schreibpfad streng geschützt", `${relative} · ${methods.join(", ")}`, relative);
+    } else if (persists && strictGuarded && !failOpenGuard) {
+      add("PASS", cronRoute ? "Cron-Route fail-closed" : "Persistierender Schreibpfad streng geschützt", `${relative} · ${methods.join(", ")}`, relative);
     }
 
     if (relative.endsWith("src/app/api/hunter/run/route.ts") && !/rateLimit\s*\(/.test(content)) {
