@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminStrict } from "@/lib/admin-auth";
+import { filterPublicTruths } from "@/lib/public-truths";
 import { loadTruths, storeConfigured, upsertTruths } from "@/lib/store";
 import type { TruthRecord } from "@/lib/types";
 
@@ -18,7 +19,8 @@ function cleanId(value: string) {
 
 export async function GET() {
   const truths = await loadTruths();
-  return NextResponse.json({ configured: truths !== null, truths: truths ?? [] });
+  const publicTruths = filterPublicTruths(truths ?? []);
+  return NextResponse.json({ configured: truths !== null, truths: publicTruths });
 }
 
 export async function POST(request: Request) {
