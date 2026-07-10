@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminStrict } from "@/lib/admin-auth";
 import {
   storeConfigured,
   upsertTranscriptChunks,
@@ -71,9 +72,6 @@ function extractTruths(chunks: TranscriptChunk[]) {
 
 async function scanOne(args: { url: string; title: string; publishedAt: string; transcript: string; source: TranscriptChunk["source"]; save: boolean }) {
   const videoId = videoIdFromUrl(args.url);
-  // Sprecher-Sicherheit aus dem Titel ableiten. Reaktions-/Debatten-/Vlog-Videos
-  // liefern KEINE "Wahrheiten" (dort ist Fremdrede nicht von Chris trennbar) —
-  // nur Themen-/Dedupe-Chunks. Nur Solo-Videos werden zu Chris-Positionen.
   const { category, safeForPositions } = classifyVideo(args.title);
   const chunks = chunkTranscript({ videoId, title: args.title, url: args.url, publishedAt: args.publishedAt, transcript: args.transcript, source: args.source })
     .map((chunk) => ({ ...chunk, category, safeForPositions }));
@@ -88,6 +86,9 @@ async function scanOne(args: { url: string; title: string; publishedAt: string; 
 }
 
 export async function POST(request: Request) {
+  const unauthorized = requireAdminStrict(request);
+  if (unauthorized) return unauthorized;
+
   const body = (await request.json().catch(() => ({}))) as ScanRequest;
   const transcript = body.transcript?.trim();
   if (!transcript || transcript.length < 120) return NextResponse.json({ error: "Missing transcript" }, { status: 400 });
