@@ -20,7 +20,9 @@ export function SecretaryChat({ claimCount, topClaimText }: SecretaryChatProps) 
     ? `Guten Tag. Ich habe ${claimCount} Claims im Radar. Der aktuell relevanteste ist „${topClaimText}". Frag mich, was du als Nächstes angehen sollst, oder lass dir daraus ein Reaktions-Skript vorbereiten.`
     : `Guten Tag. Aktuell liegen ${claimCount} Claims im Radar. Starte im Studio einen Lauf oder frag mich, wie der Workflow funktioniert.`;
 
-  const [messages, setMessages] = useState<Msg[]>([{ role: "assistant", content: intro }]);
+  // Intro nicht in den State legen: claimCount ist beim ersten Render oft noch 0
+  // (Daten laden asynchron) und würde dort als "0 Claims" einfrieren.
+  const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState<string | null>(null);
@@ -59,7 +61,7 @@ export function SecretaryChat({ claimCount, topClaimText }: SecretaryChatProps) 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-5">
-        {messages.map((m, i) =>
+        {[{ role: "assistant" as const, content: intro }, ...messages].map((m, i) =>
           m.role === "assistant" ? (
             <div key={i} className="max-w-[90%] rounded-xl border border-cyan-300/20 bg-cyan-300/[0.07] p-4 text-slate-100">
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-300">Secretary{model ? ` · ${model}` : ""}</p>
