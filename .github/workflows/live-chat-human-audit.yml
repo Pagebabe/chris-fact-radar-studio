@@ -1,0 +1,38 @@
+name: Live Chat Human Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/live-chat-human-audit.mjs"
+      - ".github/workflows/live-chat-human-audit.yml"
+
+jobs:
+  audit:
+    name: Audit live secretary conversation
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run rate-safe live chat audit
+        run: node scripts/live-chat-human-audit.mjs
+        env:
+          AUDIT_BASE_URL: https://chris-fact-radar.vercel.app
+          CHAT_AUDIT_GAP_MS: 5000
+          CHAT_AUDIT_TIMEOUT_MS: 38000
+
+      - name: Upload chat audit transcript
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-chat-human-audit
+          path: artifacts/chat-audit
+          if-no-files-found: error
