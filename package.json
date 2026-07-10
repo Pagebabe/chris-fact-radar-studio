@@ -9,6 +9,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "audit:interactions": "node scripts/audit-interactions.mjs",
+    "audit:production": "node scripts/audit-production.mjs",
+    "audit:submission": "node scripts/audit-submission.mjs",
     "test:e2e": "playwright test",
     "test:e2e:auth": "CI=true APP_ADMIN_TOKEN=test-token playwright test tests/studio-auth.spec.ts"
   },
