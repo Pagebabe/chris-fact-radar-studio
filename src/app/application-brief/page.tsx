@@ -31,9 +31,9 @@ export default function ApplicationBriefPage() {
         </h1>
         <p className="mt-5 max-w-4xl text-lg leading-8 text-slate-300">
           Chris Fact Radar ist ein live nutzbares Tool für den deutschen Fitness- und Ernährungsmarkt: Apify/manual Intake, Studio, Status und Lead-Magnet
-          sichern Aussagebasis, priorisieren Risiko und bereiten Content vor. Die LLM-Schicht darüber (OpenAI-kompatibel, aktuell NVIDIA-gehostetes
-          Llama-Nemotron, provider-agnostisch) erklärt: warum ein Treffer zählt, was sicher gesagt werden kann. Der Mensch entscheidet; Metadaten wachsen als
-          langfristiges Creator- und Market-Intelligence-Asset mit.
+          sichern Aussagebasis, priorisieren Risiko und bereiten Content vor. Die providerneutrale LLM-Schicht erklärt, warum ein Treffer zählt und was sicher
+          gesagt werden kann. Das aktuell konfigurierte Laufzeitmodell wird ausschließlich über den prüfbaren Health-Status ausgewiesen. Der Mensch entscheidet;
+          Metadaten wachsen als langfristiges Creator- und Market-Intelligence-Asset mit.
         </p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6">
