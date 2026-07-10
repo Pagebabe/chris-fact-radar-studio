@@ -1967,6 +1967,66 @@ button.claim-thumb-frame:hover .claim-thumb-play {
   overflow: hidden;
 }
 
+/* Video-Chip in Secretary-Antworten (citedClaims mit YouTube-Quelle). */
+.secretary-video {
+  margin-top: 12px;
+}
+
+.secretary-video-button {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.35);
+  text-align: left;
+}
+
+.secretary-video-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.secretary-video-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 15px;
+  padding-left: 3px;
+}
+
+.secretary-video-meta {
+  display: block;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted, #94a3b8);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.secretary-video-embed {
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 12px;
+}
+
 @media (max-width: 900px) {
   .app-body {
     display: block;

@@ -360,3 +360,50 @@ test("old localStorage search URL cannot override server debate URL", async ({ p
   await page.getByRole("button", { name: /Video starten: Streit eskaliert komplett/ }).first().click();
   await expect(page.locator("iframe").first()).toHaveAttribute("src", /start=1203/);
 });
+
+test("secretary chat renders action buttons and a playable cited video", async ({ page }) => {
+  await stubStudioApis(page, [debateClaim]);
+  await page.route("**/api/chat", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        reply: "Der stärkste Fall zum Prüfen ist der Sucralose-Claim.",
+        source: "system",
+        actions: [{ type: "openCases", label: "Vollprüfung öffnen", claimId: debateClaim.id }],
+        citedClaimIds: [debateClaim.id],
+      },
+    }),
+  );
+  await page.goto("/studio");
+
+  // Secretary ist die Standardansicht. Frage senden.
+  await page.getByPlaceholder("Frag den Secretary zu einem Treffer …").fill("Welchen Claim zuerst?");
+  await page.getByRole("button", { name: "Senden" }).click();
+
+  // Video-Thumbnail zum zitierten Claim erscheint und startet das Embed am Timestamp.
+  const play = page.getByRole("button", { name: /Video starten: Streit eskaliert komplett/ });
+  await expect(play).toBeVisible();
+  await play.click();
+  await expect(page.locator("iframe").first()).toHaveAttribute("src", /start=1203/);
+
+  // Aktions-Button springt in die Vollprüfung.
+  await page.getByRole("button", { name: "Vollprüfung öffnen" }).click();
+  await expect(page.getByRole("region", { name: "Aussagen-Posteingang" })).toBeVisible();
+});
+
+test("secretary conversation survives a view switch (visual history)", async ({ page }) => {
+  await stubStudioApis(page, [debateClaim]);
+  await page.route("**/api/chat", (route) =>
+    route.fulfill({ json: { ok: true, reply: "Merksatz-Antwort für den Verlaufstest.", source: "system", actions: [], citedClaimIds: [] } }),
+  );
+  await page.goto("/studio");
+  await page.getByPlaceholder("Frag den Secretary zu einem Treffer …").fill("Test");
+  await page.getByRole("button", { name: "Senden" }).click();
+  await expect(page.getByText("Merksatz-Antwort für den Verlaufstest.")).toBeVisible();
+
+  const nav = page.getByRole("navigation", { name: "Hauptnavigation" });
+  await nav.getByRole("button", { name: "Vollprüfung", exact: true }).click();
+  await nav.getByRole("button", { name: "Secretary", exact: true }).click();
+  // Verlauf ist nach dem Rückwechsel noch da.
+  await expect(page.getByText("Merksatz-Antwort für den Verlaufstest.")).toBeVisible();
+});

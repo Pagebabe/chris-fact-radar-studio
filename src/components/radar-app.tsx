@@ -42,7 +42,7 @@ import { Lexikon } from "./lexikon";
 import { ScienceView } from "./science-view";
 import { SettingsPanel } from "./settings-panel";
 import { HunterView } from "./hunter-view";
-import { SecretaryChat } from "./secretary-chat";
+import { SecretaryChat, type ChatAction, type ChatMsg } from "./secretary-chat";
 import { Settings, FolderOpen } from "lucide-react";
 import type { AppSettings } from "@/lib/settings";
 import type { ClaimItem, ContentPack, CreatorRecord, HunterCandidate, HunterProfile, HunterRun, ScienceItem, StageId, TruthRecord } from "@/lib/types";
@@ -90,6 +90,8 @@ export function RadarApp() {
   const [serverStore, setServerStore] = useState(false);
   const [serverWritable, setServerWritable] = useState(false);
   const [activeView, setActiveView] = useState<AppView>("secretary");
+  // Chat-Verlauf im Parent halten, damit er den View-Wechsel überlebt.
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
   const [showSettings, setShowSettings] = useState(false);
   const [creators, setCreators] = useState<CreatorRecord[]>(initialCreators);
@@ -391,6 +393,24 @@ export function RadarApp() {
     if (item) openCase(item);
   }
 
+  // Aktions-Buttons aus dem Secretary-Chat auf bestehende Navigation mappen.
+  function handleChatAction(action: ChatAction) {
+    switch (action.type) {
+      case "openClaim":
+      case "openCases":
+      case "createBrief":
+        if (action.claimId) openClaimById(action.claimId);
+        else setActiveView("cases");
+        break;
+      case "runIntake":
+        setActiveView("hunter");
+        break;
+      case "openKartei":
+        setActiveView("kartei");
+        break;
+    }
+  }
+
   function decideSelected(decision: "accepted" | "rejected") {
     if (!selected) {
       setStatus("Kein Fall ausgewählt.");
@@ -515,6 +535,11 @@ export function RadarApp() {
             <SecretaryChat
               claimCount={items.length}
               topClaimText={[...items].sort((a, b) => (b.riskScore + b.relevanceScore) - (a.riskScore + a.relevanceScore))[0]?.claim ?? null}
+              items={items}
+              selectedClaimId={selectedId || undefined}
+              messages={chatMessages}
+              setMessages={setChatMessages}
+              onAction={handleChatAction}
             />
           </div>
         </section>

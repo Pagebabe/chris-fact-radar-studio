@@ -1,12 +1,28 @@
 "use client";
 
+import type { Dispatch, SetStateAction } from "react";
 import { useRef, useState } from "react";
+import type { ClaimItem } from "@/lib/types";
+import { youtubeEmbedUrl } from "@/lib/youtube";
 
-type Msg = { role: "user" | "assistant"; content: string; badge?: string };
+export type ChatActionType = "openClaim" | "runIntake" | "createBrief" | "openCases" | "openKartei";
+export type ChatAction = { type: ChatActionType; label: string; claimId?: string };
+export type ChatMsg = {
+  role: "user" | "assistant";
+  content: string;
+  badge?: string;
+  actions?: ChatAction[];
+  citedClaimIds?: string[];
+};
 
 type SecretaryChatProps = {
   claimCount: number;
   topClaimText: string | null;
+  items: ClaimItem[];
+  selectedClaimId?: string;
+  messages: ChatMsg[];
+  setMessages: Dispatch<SetStateAction<ChatMsg[]>>;
+  onAction: (action: ChatAction) => void;
 };
 
 const SUGGESTIONS = [
@@ -15,24 +31,29 @@ const SUGGESTIONS = [
   "Gib mir Hook + 3 Argumente für ein Reaktions-Video.",
 ];
 
-export function SecretaryChat({ claimCount, topClaimText }: SecretaryChatProps) {
+export function SecretaryChat({
+  claimCount,
+  topClaimText,
+  items,
+  selectedClaimId,
+  messages,
+  setMessages,
+  onAction,
+}: SecretaryChatProps) {
   const intro = topClaimText
     ? `Guten Tag. Ich habe ${claimCount} Claims im Radar. Der aktuell relevanteste ist „${topClaimText}". Frag mich, was du als Nächstes angehen sollst, oder lass dir daraus ein Reaktions-Skript vorbereiten.`
     : `Guten Tag. Aktuell liegen ${claimCount} Claims im Radar. Starte im Studio einen Lauf oder frag mich, wie der Workflow funktioniert.`;
 
-  // Intro nicht in den State legen: claimCount ist beim ersten Render oft noch 0
-  // (Daten laden asynchron) und würde dort als "0 Claims" einfrieren.
-  const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   async function send(text: string) {
     const content = text.trim();
     if (!content || loading) return;
-    const next = [...messages, { role: "user" as const, content }];
-    setMessages(next);
+    setMessages((m) => [...m, { role: "user", content }]);
     setInput("");
     setLoading(true);
     setError(null);
@@ -40,16 +61,33 @@ export function SecretaryChat({ claimCount, topClaimText }: SecretaryChatProps) 
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message: content }),
+        // Bewusst KEIN Verlauf mitsenden: der Bot bekommt kein Gedächtnis.
+        body: JSON.stringify({ message: content, selectedClaimId }),
       });
-      const data = (await res.json()) as { reply?: string; model?: string; source?: string; error?: string };
+      const data = (await res.json()) as {
+        reply?: string;
+        model?: string;
+        source?: string;
+        actions?: ChatAction[];
+        citedClaimIds?: string[];
+        error?: string;
+      };
       if (!res.ok || !data.reply) {
         setError(data.error || "Keine Antwort erhalten.");
       } else {
         // Antwortquelle transparent machen: Fallback und Systemfakten dürfen
         // nicht wie eine LLM-Antwort aussehen.
         const badge = data.source === "llm" ? (data.model ?? "LLM") : data.source === "system" ? "Systemfakten" : "Fallback";
-        setMessages((m) => [...m, { role: "assistant", content: data.reply as string, badge }]);
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            content: data.reply as string,
+            badge,
+            actions: data.actions ?? [],
+            citedClaimIds: data.citedClaimIds ?? [],
+          },
+        ]);
       }
     } catch {
       setError("Netzwerkfehler — bitte erneut versuchen.");
@@ -59,14 +97,69 @@ export function SecretaryChat({ claimCount, topClaimText }: SecretaryChatProps) 
     }
   }
 
+  function videoClaims(citedClaimIds?: string[]) {
+    if (!citedClaimIds?.length) return [];
+    return citedClaimIds
+      .map((id) => items.find((item) => item.id === id))
+      .filter((item): item is ClaimItem => Boolean(item && item.sourceVideo?.thumbnail && youtubeEmbedUrl(item.sourceVideo.url)));
+  }
+
+  const rendered: ChatMsg[] = [{ role: "assistant", content: intro }, ...messages];
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-5">
-        {[{ role: "assistant" as const, content: intro }, ...messages].map((m, i) =>
+        {rendered.map((m, i) =>
           m.role === "assistant" ? (
             <div key={i} className="max-w-[90%] rounded-xl border border-cyan-300/20 bg-cyan-300/[0.07] p-4 text-slate-100">
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-300">Secretary{m.badge ? ` · ${m.badge}` : ""}</p>
               <p className="mt-1.5 whitespace-pre-wrap text-sm leading-6">{m.content}</p>
+
+              {videoClaims(m.citedClaimIds).map((claim) => {
+                const embedUrl = youtubeEmbedUrl(claim.sourceVideo.url);
+                const isPlaying = playingVideoId === claim.id;
+                return (
+                  <div key={claim.id} className="secretary-video">
+                    {isPlaying && embedUrl ? (
+                      <iframe
+                        className="secretary-video-embed"
+                        src={embedUrl}
+                        title={claim.sourceVideo.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        className="secretary-video-button"
+                        onClick={() => setPlayingVideoId(claim.id)}
+                        aria-label={`Video starten: ${claim.sourceVideo.title}`}
+                      >
+                        <img className="secretary-video-thumb" src={claim.sourceVideo.thumbnail || undefined} alt="" loading="lazy" />
+                        <span className="secretary-video-play" aria-hidden="true">▶</span>
+                        <span className="secretary-video-meta">
+                          {claim.sourceVideo.creator} · {claim.sourceVideo.title}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+
+              {m.actions && m.actions.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {m.actions.map((action, ai) => (
+                    <button
+                      key={`${action.type}-${ai}`}
+                      type="button"
+                      onClick={() => onAction(action)}
+                      className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 text-xs font-bold text-cyan-100 hover:border-cyan-200 hover:bg-cyan-300/20"
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div key={i} className="ml-auto max-w-[84%] rounded-xl border border-white/10 bg-white/[0.05] p-4 text-slate-100">
