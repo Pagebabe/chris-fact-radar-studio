@@ -7,6 +7,7 @@ import type { HunterCandidate, HunterProfile, HunterRun } from "@/lib/types";
 
 type Props = {
   configured: boolean;
+  canWrite: boolean;
   profiles: HunterProfile[];
   candidates: HunterCandidate[];
   runs: HunterRun[];
@@ -82,7 +83,7 @@ function marketLaneLabel(candidate: HunterCandidate) {
 }
 
 function hunterRunSummary(run?: HunterRun) {
-  if (!run) return "Noch kein Lauf. Starte den Live-Radar oder lege einen Claim manuell an.";
+  if (!run) return "Noch kein Lauf. Starte den öffentlichen Live-Radar; Admins können zusätzlich Claims importieren.";
   const quality = run.qualityPassed ?? run.candidatesSaved;
   if (quality > 0 || run.promotedClaims > 0) {
     return `${quality} Qualitäts-Kandidaten · ${run.discardedCandidates ?? 0} verworfen · ${run.promotedClaims} Claims übernommen.`;
@@ -97,7 +98,7 @@ function hunterRunSummary(run?: HunterRun) {
     : "0 neue Qualitäts-Kandidaten. Häufige Gründe: Duplikate, zu wenig Reichweite, keine klare deutschsprachige Aussage oder fehlendes Transkript.";
 }
 
-export function HunterView({ configured, profiles, candidates, runs, isRunning, onRun, onPromote, onReject }: Props) {
+export function HunterView({ configured, canWrite, profiles, candidates, runs, isRunning, onRun, onPromote, onReject }: Props) {
   const [manual, setManual] = useState(EMPTY_MANUAL);
   const [manualStatus, setManualStatus] = useState<string>("");
 
@@ -113,6 +114,10 @@ export function HunterView({ configured, profiles, candidates, runs, isRunning, 
 
   async function submitManual(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canWrite) {
+      setManualStatus("Manueller Import ist in der öffentlichen Prüfansicht gesperrt.");
+      return;
+    }
     setManualStatus("Manueller Claim wird geprüft …");
     try {
       const response = await fetch("/api/manual-claim", {
@@ -120,11 +125,12 @@ export function HunterView({ configured, profiles, candidates, runs, isRunning, 
         headers: { "content-type": "application/json" },
         body: JSON.stringify(manual),
       });
-      if (!response.ok) throw new Error("manual claim failed");
+      const data = (await response.json().catch(() => ({}))) as { error?: string; hint?: string };
+      if (!response.ok) throw new Error(data.hint || data.error || "Import fehlgeschlagen");
       setManualStatus("Manueller Claim wurde als Prüfkandidat angelegt.");
       setManual(EMPTY_MANUAL);
-    } catch {
-      setManualStatus("Import fehlgeschlagen. Bitte URL und Claim prüfen.");
+    } catch (error) {
+      setManualStatus(error instanceof Error ? error.message : "Import fehlgeschlagen. Bitte URL und Claim prüfen.");
     }
   }
 
@@ -145,6 +151,9 @@ export function HunterView({ configured, profiles, candidates, runs, isRunning, 
           </button>
           <span className={configured ? "status-pill ok" : "status-pill warn"}>
             {configured ? "Apify/Supabase verbunden" : "Provider fehlt"}
+          </span>
+          <span className={canWrite ? "status-pill ok" : "status-pill warn"}>
+            {canWrite ? "Admin-Schreibzugang" : "Prüfansicht · Schreibschutz"}
           </span>
         </div>
       </div>
@@ -222,14 +231,18 @@ export function HunterView({ configured, profiles, candidates, runs, isRunning, 
                     {candidate.qualityReason && <p className="candidate-review-note">Qualitätsgrund: {candidate.qualityReason}</p>}
                   </div>
                   <div className="candidate-actions">
-                    <button onClick={() => onPromote(candidate)} disabled={candidate.status === "needs_transcript"}><Check size={16} /> übernehmen</button>
-                    <button onClick={() => onReject(candidate)}><X size={16} /> ablehnen</button>
+                    <button title={canWrite ? "Kandidat übernehmen" : "Admin-Schreibzugang erforderlich"} onClick={() => onPromote(candidate)} disabled={!canWrite || candidate.status === "needs_transcript"}><Check size={16} /> übernehmen</button>
+                    <button title={canWrite ? "Kandidat ablehnen" : "Admin-Schreibzugang erforderlich"} onClick={() => onReject(candidate)} disabled={!canWrite}><X size={16} /> ablehnen</button>
                   </div>
                 </article>
               ))}
             </div>
           ) : (
-            <p className="empty-state">Noch keine offenen Prüfkandidaten. Starte einen Lauf oder importiere einen Claim manuell. Wenn ein Lauf 0 Kandidaten liefert, zeigt die Karte „Letzter Lauf“ die Filtergründe.</p>
+            <p className="empty-state">
+              {canWrite
+                ? "Noch keine offenen Prüfkandidaten. Starte einen Lauf oder importiere einen Claim manuell. Wenn ein Lauf 0 Kandidaten liefert, zeigt die Karte „Letzter Lauf“ die Filtergründe."
+                : "Noch keine offenen Prüfkandidaten. Starte den öffentlichen Live-Radar. Import, Übernahme und Ablehnung sind in der Prüfansicht absichtlich schreibgeschützt."}
+            </p>
           )}
         </section>
 
@@ -238,14 +251,18 @@ export function HunterView({ configured, profiles, candidates, runs, isRunning, 
             <ClipboardPlus size={18} />
             <h3>Claim einwerfen</h3>
           </div>
-          <form className="manual-claim-form" onSubmit={submitManual}>
-            <input value={manual.url} onChange={(e) => setManual((m) => ({ ...m, url: e.target.value }))} placeholder="YouTube-/Social-URL" />
-            <input value={manual.creator} onChange={(e) => setManual((m) => ({ ...m, creator: e.target.value }))} placeholder="Creator" />
-            <input value={manual.title} onChange={(e) => setManual((m) => ({ ...m, title: e.target.value }))} placeholder="Video-/Post-Titel" />
-            <textarea value={manual.claim} onChange={(e) => setManual((m) => ({ ...m, claim: e.target.value }))} placeholder="Konkrete Aussage" />
-            <textarea value={manual.note} onChange={(e) => setManual((m) => ({ ...m, note: e.target.value }))} placeholder="Notiz / Kontext" />
-            <button className="primary-btn" type="submit"><ArrowUpRight size={16} /> Als Prüfkandidat speichern</button>
-          </form>
+          {canWrite ? (
+            <form className="manual-claim-form" onSubmit={submitManual}>
+              <input value={manual.url} onChange={(e) => setManual((m) => ({ ...m, url: e.target.value }))} placeholder="YouTube-/Social-URL" />
+              <input value={manual.creator} onChange={(e) => setManual((m) => ({ ...m, creator: e.target.value }))} placeholder="Creator" />
+              <input value={manual.title} onChange={(e) => setManual((m) => ({ ...m, title: e.target.value }))} placeholder="Video-/Post-Titel" />
+              <textarea value={manual.claim} onChange={(e) => setManual((m) => ({ ...m, claim: e.target.value }))} placeholder="Konkrete Aussage" />
+              <textarea value={manual.note} onChange={(e) => setManual((m) => ({ ...m, note: e.target.value }))} placeholder="Notiz / Kontext" />
+              <button className="primary-btn" type="submit"><ArrowUpRight size={16} /> Als Prüfkandidat speichern</button>
+            </form>
+          ) : (
+            <p className="empty-state">Öffentliche Prüfer können den Intake starten und Ergebnisse ansehen. Das Schreiben in die gemeinsame Queue bleibt Admins vorbehalten.</p>
+          )}
           {manualStatus && <p className="manual-status">{manualStatus}</p>}
         </section>
       </div>
