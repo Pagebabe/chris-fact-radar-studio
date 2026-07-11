@@ -144,6 +144,7 @@ type DebateInput = {
   before: string;
   after: string;
   evidence?: Evidence[];
+  editorialReason?: string;
 };
 
 function debate(input: DebateInput): PublicDemoClaimDefinition {
@@ -186,7 +187,7 @@ function debate(input: DebateInput): PublicDemoClaimDefinition {
       responseBlocks: {
         hook: input.claim,
         opener: "Kuratierter Debattenfall — nicht mit einem automatisch gefundenen Claim verwechseln.",
-        argumentation: [why, "Kontextbelege bestätigen nicht automatisch den Claim; ihre Stance wird separat angezeigt."],
+        argumentation: [why, "Kontextbelege bestätigen oder widerlegen den Claim nicht automatisch; ihre Stance wird separat angezeigt."],
         sources: [DEBATE_CANONICAL_URLS[input.id]],
       },
     },
@@ -199,7 +200,7 @@ function debate(input: DebateInput): PublicDemoClaimDefinition {
       originalLocation: DEBATE_CANONICAL_URLS[input.id],
       contextBefore: input.before,
       contextAfter: input.after,
-      editorialReason: "Aussage wurde manuell als überprüfbarer Debatten-Claim normalisiert; der kurze Originalauszug bleibt davon getrennt.",
+      editorialReason: input.editorialReason ?? "Aussage wurde manuell als überprüfbarer Debatten-Claim normalisiert; der kurze Originalauszug bleibt davon getrennt.",
       verifiedAt: VERIFIED_AT,
     },
   };
@@ -268,7 +269,7 @@ export const PUBLIC_DEMO_CLAIM_DEFINITIONS: PublicDemoClaimDefinition[] = [
   debate({ id: "debate-003", category: "Supplements", verdict: "misleading", speaker: "Jan Leyk", excerpt: "Gehirn austrixen", before: "Nach dem Sponsorhinweis fragt Ben nach Jans Problem mit Flavor-Produkten.", after: "Jan stellt Wasser als Vergleich gegenüber; Christian Wolf fragt nach der konkreten Gesundheitsbewertung.", claim: "Jan Leyk sagt, Flavor-Produkte und Sirups würden das Gehirn industriell austricksen." }),
   debate({ id: "debate-004", category: "Supplements", verdict: "misleading", speaker: "Jan Leyk", excerpt: "Darmmikrobiom angegriffen", before: "Jan erklärt, Informationen aus seiner Timeline aufzunehmen, ohne konkrete Quellen nennen zu können.", after: "Christian Wolf fordert prüfbare Quellen und trennt Veränderung von klinischem Schaden.", claim: "Jan Leyk stellt Sucralose wegen möglicher Veränderungen des Darmmikrobioms als problematisch dar.", evidence: [whoNss, efsaSucralose, microbiomeContext] }),
   debate({ id: "debate-005", category: "Supplements", verdict: "misleading", speaker: "Jan Leyk", excerpt: "schadet mir mehr", before: "Christian Wolf zitiert Jans frühere Schadensbehauptung.", after: "Jan relativiert auf eine Veränderung gegenüber Wasser; Christian trennt Veränderung und negativen Effekt.", claim: "Jan Leyk sagt, More-Produkte würden dem Körper im Vergleich zu Wasser eher schaden oder ihn negativ verändern." }),
-  debate({ id: "debate-006", category: "Supplements", verdict: "likely_false", speaker: "Jan Leyk", excerpt: "finde ich Stevia deutlich spannender, weil es ein natürliches Süßungsmittel ist", before: "Jan begründet seine Produktkritik unter anderem damit, dass mit Sucralose statt Stevia gesüßt wird.", after: "Auf Christian Wolfs Frage, ob Natürlichkeit automatisch gut sei, antwortet Jan mit Ja; Christian benennt die Naturalistic Fallacy als typischen logischen Denkfehler.", claim: "Jan Leyk stellt Stevia als besser dar, weil es natürlich ist, und verbindet Natürlichkeit grundsätzlich mit gut.", evidence: [naturalisticFallacy, fdaSweeteners, efsaSweeteners] }),
+  debate({ id: "debate-006", category: "Supplements", verdict: "likely_false", speaker: "Jan Leyk", excerpt: "finde ich Stevia deutlich spannender, weil es ein natürliches Süßungsmittel ist", before: "Jan begründet seine Produktkritik unter anderem damit, dass mit Sucralose statt Stevia gesüßt wird.", after: "Auf Christian Wolfs Frage, ob Natürlichkeit automatisch gut sei, antwortet Jan mit Ja; Christian benennt die Naturalistic Fallacy als typischen logischen Denkfehler.", claim: "Jan Leyk stellt Stevia als besser dar, weil es natürlich ist, und verbindet Natürlichkeit grundsätzlich mit gut.", evidence: [naturalisticFallacy, fdaSweeteners, efsaSweeteners], editorialReason: "Prüfenswert, weil die verbreitete Abkürzung „natürlich = gut“ sichtbar wird und sich Originalaussage, begrifflicher Kontext und sachlich-regulatorische Einordnung sauber voneinander trennen lassen." }),
   debate({ id: "debate-007", category: "Fettverlust", verdict: "misleading", speaker: "Jan Leyk", excerpt: "Schalter im Kopf", before: "Christian Wolf trennt persönliche Nicht-Nutzung von einer pauschalen Produktabwertung.", after: "Christian führt Genetik und Lebensumstände als Gründe an, warum Hilfen den Alltag erleichtern können.", claim: "Jan Leyk behauptet, Menschen bräuchten zum Abnehmen keine Produkte, sondern müssten nur den Schalter im Kopf umlegen.", evidence: [satietyMechanisms, obesityGenetics, whoObesity] }),
   debate({ id: "debate-008", category: "Fettverlust", verdict: "misleading", speaker: "Jan Leyk", excerpt: "hör auf zu rauchen", before: "Ben vergleicht vereinfachte Ernährungstipps mit einem Hinweis an Kettenraucher.", after: "Jan nennt seine Haltung selbst hart und möglicherweise zu unempathisch.", claim: "Jan Leyk reduziert Rauchen und Abnehmen stark auf einfache Willenskraft nach dem Motto: einfach aufhören beziehungsweise weniger essen." }),
   web({ id: "external-web-001", category: "Fettverlust", verdict: "misleading", confidence: 82, url: "https://www.bzfe.de/presse/pressemeldungen-archiv/was-ist-dran-an-detox-kuren", title: "Was ist dran an Detox-Kuren?", publisher: "Bundeszentrum für Ernährung", author: "Heike Kreutz", publishedAt: "2024-03-13T00:00:00Z", excerpt: "Schadstoffe nicht mehr vollständig ausscheiden", claim: "Ein Detox- oder Entgiftungsprogramm sei notwendig, weil der Körper moderne Belastungen nicht ausreichend selbst ausscheiden könne.", why: "Die Seite dokumentiert die verbreitete Detox-Behauptung und widerspricht ihr fachlich.", evidence: evidence({ id: "bzfe-detox", publisher: "Bundeszentrum für Ernährung", title: "Was ist dran an Detox-Kuren?", url: "https://www.bzfe.de/presse/pressemeldungen-archiv/was-ist-dran-an-detox-kuren", date: "2024-03-13", stance: "contradicts", reliability: 88, snippet: "Ein gesunder Körper scheidet Stoffwechselendprodukte über eigene Organsysteme aus; ein Nutzen von Detox-Kuren ist nicht belegt.", assignmentReason: "Direkte fachliche Einordnung derselben dokumentierten Behauptung." }) }),

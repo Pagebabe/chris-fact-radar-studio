@@ -50,6 +50,17 @@ test("all public evidence is traceable and context is not confirmation", () => {
   }
 });
 
+test("debate-006 keeps a specific editorial reason and pure context evidence", () => {
+  const showcase = PUBLIC_DEMO_CLAIM_DEFINITIONS.find((item) => item.claim.id === "debate-006");
+  expect(showcase).toBeTruthy();
+  expect(showcase!.provenance.editorialReason).toContain("natürlich = gut");
+  expect(showcase!.provenance.editorialReason).not.toBe("Aussage wurde manuell als überprüfbarer Debatten-Claim normalisiert; der kurze Originalauszug bleibt davon getrennt.");
+  expect(showcase!.claim.evidence.length).toBeGreaterThan(0);
+  for (const source of showcase!.claim.evidence) expect(source.stance).toBe("context");
+  // Kontext ≠ widerlegt: der öffentliche Hinweistext muss beide Richtungen verneinen.
+  expect(showcase!.claim.responseBlocks?.argumentation?.join(" ")).toContain("bestätigen oder widerlegen den Claim nicht automatisch");
+});
+
 test("five external claims have versioned repository provenance", () => {
   const external = PUBLIC_DEMO_CLAIM_DEFINITIONS.filter((item) => item.claim.id.startsWith("external-web-"));
   expect(external).toHaveLength(5);
