@@ -7,6 +7,7 @@ export type StageDefinition = { id: StageId; label: string; description: string 
 export type Evidence = {
   id: string; publisher: string; title: string; url: string; date: string;
   stance: "supports" | "contradicts" | "context"; reliability: number; snippet: string;
+  origin?: "curated" | "retrieval"; assignmentReason?: string; checkedAt?: string;
 };
 
 export type ViewSnapshot = { at: string; views: number };
@@ -18,6 +19,7 @@ export type SourceVideo = {
   url: string; creator: string; creatorHandle?: string; creatorAvatarUrl?: string; channelId?: string; title: string; description: string;
   publishedAt: string; views: number; likes: number; comments: number; thumbnail: string; transcriptSnippet: string;
   transcriptSource?: "youtube-captions" | "description" | "curated" | "manual"; viewHistory?: ViewSnapshot[];
+  speaker?: string; verificationStatus?: "verified" | "partially_verified"; accessedAt?: string;
 };
 
 export type CreatorStatus = "suggested" | "watched" | "ignored";

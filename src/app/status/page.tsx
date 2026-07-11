@@ -2,6 +2,7 @@ import Link from "next/link";
 import { loadClaims, storeConfigured } from "@/lib/store";
 import { llmConfigured, configuredLlmModel } from "@/lib/llm";
 import { isPublicProductionClaim, publicClaimKind } from "@/lib/public-claims";
+import { mergePublicDemoDefinitions } from "@/data/public-demo-claims";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ const smokeSteps = [
 ];
 
 export default async function StatusPage() {
-  const claims = (await loadClaims()) ?? [];
+  const claims = mergePublicDemoDefinitions((await loadClaims()) ?? []);
   const publicClaims = claims.filter(isPublicProductionClaim);
   const youtubeCount = publicClaims.filter((claim) => publicClaimKind(claim) === "youtube").length;
   const debateCount = publicClaims.filter((claim) => publicClaimKind(claim) === "debate").length;

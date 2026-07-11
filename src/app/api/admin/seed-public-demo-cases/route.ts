@@ -8,13 +8,14 @@ export async function POST(request: Request) {
   if (unauthorized) return unauthorized;
 
   const url = new URL(request.url);
-  if (url.searchParams.get("confirm") !== "seed-debate-cases") {
-    return NextResponse.json({ ok: false, error: "Use confirm=seed-debate-cases." }, { status: 400 });
+  if (url.searchParams.get("confirm") !== "seed-public-demo-cases") {
+    return NextResponse.json({ ok: false, error: "Use confirm=seed-public-demo-cases." }, { status: 400 });
   }
 
-  // Wie der kombinierte Demo-Seeder: idempotent und Human-Gate-sicher, weil
-  // bestehende Stage-/Entscheidungsfelder aus dem Store den Seed überleben.
-  const demoIds = new Set(PUBLIC_DEMO_CLAIM_IDS.filter((id) => id.startsWith("debate-")));
+  // Idempotent und Human-Gate-sicher: Inhaltsfelder kommen versioniert aus dem
+  // Repo, bestehende Stage-/Entscheidungsfelder (z. B. debate-002 accepted +
+  // decidedAt) überleben den Seed, weil zuerst gegen den Store gemergt wird.
+  const demoIds = new Set(PUBLIC_DEMO_CLAIM_IDS);
   const claims = mergePublicDemoDefinitions((await loadClaims()) ?? []).filter((claim) => demoIds.has(claim.id));
   const saved = await upsertClaims(claims);
   return NextResponse.json({ ok: Boolean(saved), saved, count: claims.length, claims });

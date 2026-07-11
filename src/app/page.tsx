@@ -2,6 +2,7 @@ import Link from "next/link";
 import { loadClaims } from "@/lib/store";
 import { llmConfigured } from "@/lib/llm";
 import { isPublicProductionClaim, publicClaimKind } from "@/lib/public-claims";
+import { mergePublicDemoDefinitions } from "@/data/public-demo-claims";
 import type { ClaimItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -72,7 +73,7 @@ const llmHelp = [
 ];
 
 export default async function Home() {
-  const claims = ((await loadClaims()) ?? []).filter(isPublicProductionClaim);
+  const claims = mergePublicDemoDefinitions((await loadClaims()) ?? []).filter(isPublicProductionClaim);
   const sourceCount = new Set(claims.map((claim) => claim.sourceVideo?.url).filter(Boolean)).size;
   const debateCount = claims.filter((claim) => publicClaimKind(claim) === "debate").length;
   const webCount = claims.filter((claim) => publicClaimKind(claim) === "web").length;

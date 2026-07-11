@@ -1246,6 +1246,9 @@ function ClaimInspector({
             </div>
             <h3>{item.sourceVideo.title}</h3>
             <p>{item.sourceVideo.description}</p>
+            {item.sourceVideo.speaker && (
+              <p><strong>Sprecher/Autor:</strong> {item.sourceVideo.speaker} · {item.sourceVideo.verificationStatus === "verified" ? "Fundstelle verifiziert" : "teilweise verifiziert"}</p>
+            )}
             <div className="chips">
               <span className="chip">{compactNumber(item.sourceVideo.views)} Views</span>
               <span className="chip">{compactNumber(item.sourceVideo.likes)} Likes</span>
@@ -1345,6 +1348,7 @@ function ClaimInspector({
           {item.decision && (
             <div className="decision-note">
               {item.decision === "accepted" ? "Angenommen" : "Abgelehnt"} · {item.decisionNote}
+              {item.decidedAt ? ` · entschieden am ${dateLabel(item.decidedAt)}` : ""}
             </div>
           )}
         </section>
@@ -1360,6 +1364,12 @@ function ClaimInspector({
                 </div>
                 <p>{source.title}</p>
                 <p>{source.snippet}</p>
+                <div className="chips">
+                  <span className="chip">{source.stance === "supports" ? "stützt" : source.stance === "contradicts" ? "widerspricht" : "Kontext — keine Bestätigung"}</span>
+                  <span className="chip">{source.date}</span>
+                  {source.origin && <span className="chip">{source.origin === "curated" ? "kuratiert" : "Retrieval"}</span>}
+                </div>
+                {source.assignmentReason && <p>Zuordnung: {source.assignmentReason}</p>}
               </a>
             ))}
           </div>

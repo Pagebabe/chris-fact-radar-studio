@@ -4,13 +4,14 @@ import { isPublicClaim, isWritableClaim } from "@/lib/public-claims";
 import { loadClaims, storeConfigured, upsertClaims } from "@/lib/store";
 import { normalizeClaimsSourceUrls } from "@/lib/debate-claims";
 import type { ClaimItem } from "@/lib/types";
+import { mergePublicDemoDefinitions } from "@/data/public-demo-claims";
 
 export async function GET(request: Request) {
   if (!storeConfigured()) {
     return NextResponse.json({ configured: false, claims: [], writable: false });
   }
   const claims = await loadClaims();
-  const publicClaims = normalizeClaimsSourceUrls(claims ?? []).filter(isPublicClaim);
+  const publicClaims = normalizeClaimsSourceUrls(mergePublicDemoDefinitions(claims ?? [])).filter(isPublicClaim);
   const writable = requireAdminStrict(request) === null;
   return NextResponse.json({ configured: claims !== null, claims: publicClaims, writable });
 }

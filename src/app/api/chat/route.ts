@@ -6,6 +6,7 @@ import { filterPublicTruths } from "@/lib/public-truths";
 import { rateLimit } from "@/lib/rate-limit";
 import { loadClaims, loadTruths, storeConfigured } from "@/lib/store";
 import type { ClaimItem, HunterCandidate, HunterRun, TruthRecord } from "@/lib/types";
+import { mergePublicDemoDefinitions } from "@/data/public-demo-claims";
 
 export const maxDuration = 30;
 
@@ -60,6 +61,7 @@ const SYSTEM_PROMPT = `Du bist der Operator-Copilot im Chris Fact Radar, kein ge
 WAHRHEIT
 - Nutze ausschließlich APP-FAKTEN und APP-KONTEXT. Erfinde keine Claims, Quellen, Studien, Autoren, Jahre, Journals, URLs, Endpunkte, Runs oder Chris-Aussagen.
 - Wenn bei einem Claim EVIDENCE=0 steht, sage ausdrücklich, dass im App-Kontext keine Evidence hinterlegt ist. Nenne dann keine konkrete Studie, kein Jahr, keinen Autor und kein Journal.
+- Evidence mit STANCE=context ist Einordnung und darf nicht als bestätigender Beweis bezeichnet werden. Kuratierte Evidence wurde redaktionell zugeordnet und nicht automatisch live gefunden.
 - Chris-Wissen mit kuratierten Positionen ist live. Ein vollständig retrieval-grounded RAG über alle Inhalte ist Ausbaupfad.
 - Direkte produktive TikTok-/Instagram-/YouTube-Crawler sind nicht fertig. Apify und manueller Import liefern Intake-Material; YouTube-Links sind Quellen-URLs.
 - Das LLM unterstützt Bewertung und Textausgabe. Es entscheidet nie autonom über Wahrheit.
@@ -452,7 +454,12 @@ function chatResponse(args: {
 
 async function hydrateRequest(body: ChatRequest) {
   const [storedClaims, storedTruths] = await Promise.all([loadClaims(), loadTruths()]);
-  const claimsSource = storeConfigured() ? (storedClaims ?? []) : (body.context?.claims ?? storedClaims ?? []);
+  // Versionierte Demo-Definitionen nur in den Server-Store mergen. Ohne Store
+  // (Blank-Env/Tests) bleibt der Body-Kontext die alleinige Wahrheit, damit
+  // Count-Antworten deterministisch zum sichtbaren Fixture passen.
+  const claimsSource = storeConfigured()
+    ? mergePublicDemoDefinitions(storedClaims ?? [])
+    : (body.context?.claims ?? storedClaims ?? []);
   const claims = claimsSource.filter(isPublicProductionClaim);
   const truths = filterPublicTruths(storedTruths ?? []);
 

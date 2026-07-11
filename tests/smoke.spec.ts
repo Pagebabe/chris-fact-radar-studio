@@ -42,7 +42,7 @@ const debateClaim = {
     ...reviewClaim.sourceVideo,
     id: "yt-zO3ZPZKRkBM",
     platform: "Debatten-Rebuttal",
-    url: "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=1203s",
+    url: "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=1219s",
     creator: "{ungeskriptet} by Ben",
     title: "Streit eskaliert komplett: Christian Wolf vs Jan Leyk",
     thumbnail: "https://i.ytimg.com/vi/zO3ZPZKRkBM/hqdefault.jpg",
@@ -71,6 +71,22 @@ const webClaim = {
     title: "Normale Webquelle",
     thumbnail: "",
   },
+};
+
+const contextEvidenceClaim = {
+  ...reviewClaim,
+  evidence: [{
+    id: "context-source",
+    publisher: "Test Publisher",
+    title: "Kontextquelle",
+    url: "https://example.com/context",
+    date: "2026-01-01",
+    stance: "context",
+    reliability: 80,
+    snippet: "Diese Quelle ordnet den Claim ein.",
+    origin: "curated",
+    assignmentReason: "Nur Kontext; bestätigt den Claim nicht.",
+  }],
 };
 
 const creator = {
@@ -115,7 +131,7 @@ const candidate = {
   updatedAt: "2026-07-04T00:00:00.000Z",
 };
 
-async function stubStudioApis(page: import("@playwright/test").Page, claims = [reviewClaim]) {
+async function stubStudioApis(page: import("@playwright/test").Page, claims: unknown[] = [reviewClaim]) {
   await page.route("**/api/claims", (route) => {
     if (route.request().method() === "GET") {
       return route.fulfill({ json: { configured: true, claims, writable: false } });
@@ -222,6 +238,15 @@ test("studio core navigation renders without browser errors", async ({ page }) =
   await nav.getByRole("button", { name: "Science" }).click();
   await expect(page.getByRole("heading", { name: "Wissenschafts-Brief" })).toBeVisible();
   expect(errors, errors.join("\n")).toEqual([]);
+});
+
+test("context evidence is visibly labeled as non-confirming", async ({ page }) => {
+  await stubStudioApis(page, [contextEvidenceClaim]);
+  await page.goto("/studio");
+  await page.getByRole("navigation", { name: "Hauptnavigation" }).getByRole("button", { name: "Vollprüfung", exact: true }).click();
+  await expect(page.getByText("Kontext — keine Bestätigung")).toBeVisible();
+  // exact: sonst kollidiert der Substring mit „kuratierter Ausschnitt".
+  await expect(page.getByText("kuratiert", { exact: true })).toBeVisible();
 });
 
 test("public reviewer can run intake but cannot mutate shared data", async ({ page }) => {
@@ -338,9 +363,9 @@ test("debate YouTube source embeds with timestamp independent of platform label"
   const iframe = page.locator("iframe").first();
   await expect(iframe).toBeVisible();
   await expect(iframe).toHaveAttribute("src", /\/embed\/zO3ZPZKRkBM/);
-  await expect(iframe).toHaveAttribute("src", /start=1203/);
+  await expect(iframe).toHaveAttribute("src", /start=1219/);
   await expect(iframe).toHaveAttribute("src", /autoplay=1/);
-  await expect(page.getByRole("link", { name: /Quelle öffnen/ })).toHaveAttribute("href", "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=1203s");
+  await expect(page.getByRole("link", { name: /Quelle öffnen/ })).toHaveAttribute("href", "https://www.youtube.com/watch?v=zO3ZPZKRkBM&t=1219s");
 });
 
 test("normal web source remains a direct source link", async ({ page }) => {
@@ -358,7 +383,7 @@ test("old localStorage search URL cannot override server debate URL", async ({ p
   await page.getByRole("navigation", { name: "Hauptnavigation" }).getByRole("button", { name: "Vollprüfung", exact: true }).click();
   await expect(page.locator("body")).not.toContainText("youtube.com/results");
   await page.getByRole("button", { name: /Video starten: Streit eskaliert komplett/ }).first().click();
-  await expect(page.locator("iframe").first()).toHaveAttribute("src", /start=1203/);
+  await expect(page.locator("iframe").first()).toHaveAttribute("src", /start=1219/);
 });
 
 test("secretary chat renders action buttons and a playable cited video", async ({ page }) => {
@@ -384,7 +409,7 @@ test("secretary chat renders action buttons and a playable cited video", async (
   const play = page.getByRole("button", { name: /Video starten: Streit eskaliert komplett/ });
   await expect(play).toBeVisible();
   await play.click();
-  await expect(page.locator("iframe").first()).toHaveAttribute("src", /start=1203/);
+  await expect(page.locator("iframe").first()).toHaveAttribute("src", /start=1219/);
 
   // Aktions-Button springt in die Vollprüfung.
   await page.getByRole("button", { name: "Vollprüfung öffnen" }).click();
